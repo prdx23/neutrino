@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <title>webgl2</title>
+
+        <style>
+            html {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+            }
+            body {
+                font-family: sans-serif;
+            }
+            canvas {
+                border: 1px solid #eeeeee;
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <script id='vertex-shader' type='x-shader/x-vertex'>#version 300 es
+            in vec2 a_position;
+            in vec3 a_color;
+            uniform vec2 u_resolution;
+            out vec3 v_color;
+
+            void main() {
+                v_color = a_color;
+                vec2 clipspace = ((a_position / u_resolution) * 2.0) - 1.0;
+                gl_Position = vec4(clipspace * vec2(1, -1), 0, 1);
+            }
+        </script>
+
+
+        <script id='fragment-shader' type='x-shader/x-fragment'>#version 300 es
+            precision highp float;
+            out vec4 fragColor;
+            in vec3 v_color;
+
+            void main() {
+                fragColor = vec4(v_color, 1);
+            }
+        </script>
+
+        <main id='main'>
+            <canvas id='canvas'></canvas>
+        </main>
+
+        <script src='main.js'></script>
+    </body>
+
+</html>
