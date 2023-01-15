@@ -104,7 +104,8 @@ function init() {
     )
 
 
-    let resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution')
+    let objectMatrixUniformLocation = gl.getUniformLocation(program, 'u_objectMatrix')
+    let projectionMatrixUniformLocation = gl.getUniformLocation(program, 'u_projectionMatrix')
 
     // render
 
@@ -115,7 +116,16 @@ function init() {
     gl.useProgram(program)
     gl.bindVertexArray(vao)
 
-    gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height)
+    let projectionMatrix = m3.projection(
+        gl.canvas.clientWidth, gl.canvas.clientHeight
+    )
+    gl.uniformMatrix3fv(projectionMatrixUniformLocation, false, projectionMatrix)
+
+    let objectMatrix = m3.identity()
+    objectMatrix = m3.translate(objectMatrix, 50, 100)
+    objectMatrix = m3.rotate(objectMatrix, 15 * Math.PI / 180)
+    objectMatrix = m3.scale(objectMatrix, 1.4, 1)
+    gl.uniformMatrix3fv(objectMatrixUniformLocation, false, objectMatrix)
 
     gl.drawArrays(
         gl.TRIANGLES,  // primitive type
