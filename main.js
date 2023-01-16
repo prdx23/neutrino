@@ -35,12 +35,12 @@ function createProgram(gl, vsSource, fsSource, attributes) {
 }
 
 
-function loadBuffer(gl, data, drawType) {
-    let buffer = gl.createBuffer()
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-    gl.bufferData(gl.ARRAY_BUFFER, data, drawType)
-    return buffer
-}
+// function loadBuffer(gl, data, drawType) {
+//     let buffer = gl.createBuffer()
+//     gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+//     gl.bufferData(gl.ARRAY_BUFFER, data, drawType)
+//     return buffer
+// }
 
 
 
@@ -67,30 +67,26 @@ function init() {
     gl.bindVertexArray(vao)
 
 
-    let positions = [
-        200, 200,
-        200, 400,
-        400, 400,
-    ]
-    loadBuffer(gl, new Float32Array(positions), gl.STATIC_DRAW)
+    let positionBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, data3dF, gl.STATIC_DRAW)
+
 
     let positionAttributeLocation = gl.getAttribLocation(program, 'a_position')
     gl.enableVertexAttribArray(positionAttributeLocation)
     gl.vertexAttribPointer(
         positionAttributeLocation,
-        2,           // size,
+        3,           // size,
         gl.FLOAT,    // type,
         false,       // normalize,
         0,           // stride,
         0,           // offset
     )
 
-    let colors = [
-        255, 0, 0,
-        0, 255, 0,
-        0, 0, 255,
-    ]
-    loadBuffer(gl, new Uint8Array(colors), gl.STATIC_DRAW)
+    let colorBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, data3dFColor, gl.STATIC_DRAW)
+
 
     let colorAttributeLocation = gl.getAttribLocation(program, 'a_color')
     gl.enableVertexAttribArray(colorAttributeLocation)
@@ -104,34 +100,55 @@ function init() {
     )
 
 
-    let objectMatrixUniformLocation = gl.getUniformLocation(program, 'u_objectMatrix')
-    let projectionMatrixUniformLocation = gl.getUniformLocation(program, 'u_projectionMatrix')
+    let objectMatrixUniformLocation = gl.getUniformLocation(
+        program, 'u_objectMatrix'
+    )
+    let projectionMatrixUniformLocation = gl.getUniformLocation(
+        program, 'u_projectionMatrix'
+    )
 
     // render
 
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
-    gl.clearColor(0, 0, 0, 1)
-    gl.clear(gl.COLOR_BUFFER_BIT)
+    gl.enable(gl.CULL_FACE)
+    gl.enable(gl.DEPTH_TEST)
 
-    gl.useProgram(program)
-    gl.bindVertexArray(vao)
+    let x = 0
 
-    let projectionMatrix = m3.projection(
-        gl.canvas.clientWidth, gl.canvas.clientHeight
-    )
-    gl.uniformMatrix3fv(projectionMatrixUniformLocation, false, projectionMatrix)
+    function render() {
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+        gl.clearColor(0, 0, 0, 1)
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-    let objectMatrix = m3.identity()
-    objectMatrix = m3.translate(objectMatrix, 50, 100)
-    objectMatrix = m3.rotate(objectMatrix, 15 * Math.PI / 180)
-    objectMatrix = m3.scale(objectMatrix, 1.4, 1)
-    gl.uniformMatrix3fv(objectMatrixUniformLocation, false, objectMatrix)
+        gl.useProgram(program)
+        gl.bindVertexArray(vao)
 
-    gl.drawArrays(
-        gl.TRIANGLES,  // primitive type
-        0,             // offset
-        3,             // count
-    )
+
+        let projectionMatrix = m4.orthographic(
+            0, gl.canvas.clientWidth,
+            gl.canvas.clientHeight, 0,
+            gl.canvas.clientWidth, -gl.canvas.clientWidth,
+        )
+        gl.uniformMatrix4fv(
+            projectionMatrixUniformLocation, false, projectionMatrix
+        )
+
+        let objectMatrix = m4.identity()
+        objectMatrix = m4.translate(objectMatrix, 300, 300, 0)
+        objectMatrix = m4.xRotate(objectMatrix, Math.sin(x * Math.PI / 180))
+        objectMatrix = m4.yRotate(objectMatrix, x * Math.PI / 180)
+        objectMatrix = m4.scale(objectMatrix, 2, 2, 2)
+        gl.uniformMatrix4fv(objectMatrixUniformLocation, false, objectMatrix)
+
+        gl.drawArrays(
+            gl.TRIANGLES,  // primitive type
+            0,             // offset
+            16 * 6,             // count
+        )
+
+        x += 1
+        requestAnimationFrame(render)
+    }
+    render()
 }
 
 
