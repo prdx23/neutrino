@@ -123,19 +123,40 @@ function init() {
         gl.bindVertexArray(vao)
 
 
-        let projectionMatrix = m4.orthographic(
-            0, gl.canvas.clientWidth,
-            gl.canvas.clientHeight, 0,
-            gl.canvas.clientWidth, -gl.canvas.clientWidth,
+        let cameraMatrix = m4.identity()
+        cameraMatrix = m4.translate(
+            cameraMatrix, 
+            Math.sin(x * 0.3 * Math.PI / 180) * 800,
+            300,
+            Math.cos(x * 0.3 * Math.PI / 180) * 800,
+            // 800
         )
+
+        cameraMatrix = m4.lookAt(
+            [cameraMatrix[12], cameraMatrix[13], cameraMatrix[14]],
+            [0, 0, 0],
+            [0, 1, 0],
+        )
+
+        let viewMatrix = m4.inverse(cameraMatrix)
+
+        let projectionMatrix = m4.perspective(
+            50 * Math.PI / 180,
+            gl.canvas.clientWidth / gl.canvas.clientHeight,
+            1, 2000,
+        )
+
+        let viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix)
         gl.uniformMatrix4fv(
-            projectionMatrixUniformLocation, false, projectionMatrix
+            projectionMatrixUniformLocation, false, viewProjectionMatrix
         )
 
         let objectMatrix = m4.identity()
-        objectMatrix = m4.translate(objectMatrix, 300, 300, 0)
-        objectMatrix = m4.xRotate(objectMatrix, Math.sin(x * Math.PI / 180))
-        objectMatrix = m4.yRotate(objectMatrix, x * Math.PI / 180)
+        objectMatrix = m4.translate(objectMatrix, -50, -75, 0)
+        objectMatrix = m4.xRotate(objectMatrix, Math.sin(x * Math.PI / 180 / 2))
+        // objectMatrix = m4.yRotate(objectMatrix, x * Math.PI / 180)
+        // objectMatrix = m4.translate(objectMatrix, 0, 75, 0)
+        // objectMatrix = m4.translate(objectMatrix, 50, 0, 0)
         objectMatrix = m4.scale(objectMatrix, 2, 2, 2)
         gl.uniformMatrix4fv(objectMatrixUniformLocation, false, objectMatrix)
 
