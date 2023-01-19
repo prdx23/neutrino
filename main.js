@@ -2,22 +2,21 @@ const width = 800
 const height = 800
 
 
-function createShader(gl, type, source) {
-    let shader = gl.createShader(type)
-    gl.shaderSource(shader, source)
-    gl.compileShader(shader)
+function createProgram(gl, vsSource, fsSource) {
 
-    if( !gl.getShaderParameter(shader, gl.COMPILE_STATUS) ) {
-        console.log('Shader Error: ', gl.getShaderInfoLog(shader))
-        gl.deleteShader(shader)
+    function createShader(gl, type, source) {
+        let shader = gl.createShader(type)
+        gl.shaderSource(shader, source)
+        gl.compileShader(shader)
+
+        if( !gl.getShaderParameter(shader, gl.COMPILE_STATUS) ) {
+            console.log('Shader Error: ', gl.getShaderInfoLog(shader))
+            gl.deleteShader(shader)
+        }
+
+        return shader
     }
 
-    return shader
-}
-
-
-
-function createProgram(gl, vsSource, fsSource, attributes) {
     let vertexShader = createShader(gl, gl.VERTEX_SHADER, vsSource)
     let fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fsSource)
 
@@ -35,19 +34,11 @@ function createProgram(gl, vsSource, fsSource, attributes) {
 }
 
 
-// function loadBuffer(gl, data, drawType) {
-//     let buffer = gl.createBuffer()
-//     gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-//     gl.bufferData(gl.ARRAY_BUFFER, data, drawType)
-//     return buffer
-// }
-
-
 
 init()
 
-
 function init() {
+
     const canvas = document.getElementById('canvas')
     canvas.width = width
     canvas.height = height
@@ -58,56 +49,83 @@ function init() {
         return
     }
 
-    let vsSource = document.getElementById('vertex-shader').textContent
-    let fsSource = document.getElementById('fragment-shader').textContent
-    let program = createProgram(gl, vsSource, fsSource)
+    let buffers = genBuffers(gl)
 
+    for( let [name, shader] of Object.entries(shaders) ) {
+        shaders[name].program = createProgram(gl, shader.vertex, shader.fragment)
+        shaders[name].objects = []
+    }
 
-    let vao = gl.createVertexArray()
-    gl.bindVertexArray(vao)
+    for( let [name, bufferData] of Object.entries(buffers) ) {
+        let buffer = gl.createBuffer()
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+        gl.bufferData(gl.ARRAY_BUFFER, bufferData.data, bufferData.bufferType)
+        buffers[name].buffer = buffer
+        gl.bindBuffer(gl.ARRAY_BUFFER, null)
+    }
 
+    let uboIndex = 0
+    for( let [name, object] of Object.entries(objects) ) {
+        let program = shaders[object.shader].program
 
-    let positionBuffer = gl.createBuffer()
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, data3dF, gl.STATIC_DRAW)
+        let vao = gl.createVertexArray()
+        gl.bindVertexArray(vao)
+        objects[name].vao = vao
 
+        for( let attrib of Object.keys(object.attributes) ) {
+            let buffer = buffers[object.attributes[attrib]]
 
-    let positionAttributeLocation = gl.getAttribLocation(program, 'a_position')
-    gl.enableVertexAttribArray(positionAttributeLocation)
-    gl.vertexAttribPointer(
-        positionAttributeLocation,
-        3,           // size,
-        gl.FLOAT,    // type,
-        false,       // normalize,
-        0,           // stride,
-        0,           // offset
-    )
+            let location = gl.getAttribLocation(program, attrib)
+            gl.enableVertexAttribArray(location)
 
-    let colorBuffer = gl.createBuffer()
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, data3dFColor, gl.STATIC_DRAW)
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer)
+            gl.vertexAttribPointer(
+                location, buffer.size, buffer.type, buffer.normalize, 0, 0,
+            )
+            gl.bindBuffer(gl.ARRAY_BUFFER, null)
 
+        }
 
-    let colorAttributeLocation = gl.getAttribLocation(program, 'a_color')
-    gl.enableVertexAttribArray(colorAttributeLocation)
-    gl.vertexAttribPointer(
-        colorAttributeLocation,
-        3,           // size,
-        gl.UNSIGNED_BYTE,    // type,
-        true,       // normalize,
-        0,           // stride,
-        0,           // offset
-    )
+        // for( let uniformName of Object.keys(object.uniforms) ) {
+        //     object.uniforms[uniformName].location = gl.getUniformLocation(
+        //         program, uniformName
+        //     )
+        // }
 
+        for( let [uniformBlockName, uniformBlockData] of Object.entries(object.uniforms) ) {
+            let index = gl.getUniformBlockIndex(program, uniformBlockName)
+            let size = gl.getActiveUniformBlockParameter(
+                program, index, gl.UNIFORM_BLOCK_DATA_SIZE
+            )
 
-    let objectMatrixUniformLocation = gl.getUniformLocation(
-        program, 'u_objectMatrix'
-    )
-    let projectionMatrixUniformLocation = gl.getUniformLocation(
-        program, 'u_projectionMatrix'
-    )
+            let buffer = gl.createBuffer()
+            gl.bindBuffer(gl.UNIFORM_BUFFER, buffer)
+            gl.bufferData(gl.UNIFORM_BUFFER, size, gl.DYNAMIC_DRAW)
+            gl.bindBuffer(gl.UNIFORM_BUFFER, null)
 
-    // render
+            uboIndex += 1
+            gl.bindBufferBase(gl.UNIFORM_BUFFER, uboIndex, buffer)
+
+            let variableNames = Object.keys(uniformBlockData)
+            let variableIndices = gl.getUniformIndices(program, variableNames)
+            let variableOffsets = gl.getActiveUniforms(
+                program, variableIndices, gl.UNIFORM_OFFSET
+            )
+
+            for( let [i, variable] of variableNames.entries() ) {
+                object.uniforms[uniformBlockName][variable].index = variableIndices[i]
+                object.uniforms[uniformBlockName][variable].offset = variableOffsets[i]
+            }
+
+            object.uniforms[uniformBlockName].buffer = buffer
+            object.uniforms[uniformBlockName].index = index
+            object.uniforms[uniformBlockName].uboIndex = uboIndex
+            // gl.uniformBlockBinding(program, index, uboIndex)
+        }
+
+        shaders[object.shader].objects.push(objects[name])
+        gl.bindVertexArray(null)
+    }
 
     gl.enable(gl.CULL_FACE)
     gl.enable(gl.DEPTH_TEST)
@@ -119,19 +137,9 @@ function init() {
         gl.clearColor(0, 0, 0, 1)
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-        gl.useProgram(program)
-        gl.bindVertexArray(vao)
-
 
         let cameraMatrix = m4.identity()
-        cameraMatrix = m4.translate(
-            cameraMatrix, 
-            Math.sin(x * 0.3 * Math.PI / 180) * 800,
-            300,
-            Math.cos(x * 0.3 * Math.PI / 180) * 800,
-            // 800
-        )
-
+        cameraMatrix = m4.translate(cameraMatrix, 0, 300, 1800)
         cameraMatrix = m4.lookAt(
             [cameraMatrix[12], cameraMatrix[13], cameraMatrix[14]],
             [0, 0, 0],
@@ -141,42 +149,59 @@ function init() {
         let viewMatrix = m4.inverse(cameraMatrix)
 
         let projectionMatrix = m4.perspective(
-            50 * Math.PI / 180,
+            30 * Math.PI / 180,
             gl.canvas.clientWidth / gl.canvas.clientHeight,
             1, 2000,
         )
 
         let viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix)
-        gl.uniformMatrix4fv(
-            projectionMatrixUniformLocation, false, viewProjectionMatrix
-        )
 
-        let objectMatrix = m4.identity()
-        objectMatrix = m4.translate(objectMatrix, -50, -75, 0)
-        objectMatrix = m4.xRotate(objectMatrix, Math.sin(x * Math.PI / 180 / 2))
-        // objectMatrix = m4.yRotate(objectMatrix, x * Math.PI / 180)
-        // objectMatrix = m4.translate(objectMatrix, 0, 75, 0)
-        // objectMatrix = m4.translate(objectMatrix, 50, 0, 0)
-        objectMatrix = m4.scale(objectMatrix, 2, 2, 2)
-        gl.uniformMatrix4fv(objectMatrixUniformLocation, false, objectMatrix)
 
-        gl.drawArrays(
-            gl.TRIANGLES,  // primitive type
-            0,             // offset
-            16 * 6,             // count
-        )
+        let i = 0
+        for( let shader of Object.values(shaders) ) {
+            gl.useProgram(shader.program)
+
+            for( let object of Object.values(shader.objects) ) {
+                i += 1
+                gl.bindVertexArray(object.vao)
+
+
+                let objectMatrix = m4.identity()
+                objectMatrix = m4.yRotate(objectMatrix, -x * 0.5 * i * Math.PI / 180)
+                objectMatrix = m4.xRotate(objectMatrix, -x * 0.5 * i * Math.PI / 180)
+                // object.uniforms['u_matrix'].update(
+                //     gl,
+                //     object.uniforms['u_matrix'].location,
+                //     viewProjectionMatrix,
+                //     objectMatrix,
+                // )
+                let matrix = object.uniforms.objectData.u_matrix.update(
+                    viewProjectionMatrix, objectMatrix
+                )
+
+                gl.bindBuffer(gl.UNIFORM_BUFFER, object.uniforms.objectData.buffer)
+                gl.bufferSubData(
+                    gl.UNIFORM_BUFFER,
+                    object.uniforms.objectData.u_matrix.offset,
+                    new Float32Array(matrix),
+                    0
+                )
+                gl.uniformBlockBinding(
+                    shader.program,
+                    object.uniforms.objectData.index,
+                    object.uniforms.objectData.uboIndex,
+                )
+
+                gl.drawArrays(gl.TRIANGLES, 0, object.count)
+                gl.bindVertexArray(null)
+                gl.bindBuffer(gl.UNIFORM_BUFFER, null)
+            }
+
+        }
 
         x += 1
         requestAnimationFrame(render)
     }
     render()
+
 }
-
-
-
-
-
-
-
-
-

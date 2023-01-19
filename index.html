@@ -27,13 +27,14 @@
             in vec3 a_color;
             out vec3 v_color;
 
-            uniform mat4 u_objectMatrix;
-            uniform mat4 u_projectionMatrix;
+            uniform objectData {
+                // float u_alpha;
+                mat4 u_matrix;
+            };
 
             void main() {
-                gl_Position = u_projectionMatrix * u_objectMatrix * a_position;
+                gl_Position = u_matrix * a_position;
                 v_color = a_color;
-
             }
         </script>
 
@@ -52,8 +53,8 @@
             <canvas id='canvas'></canvas>
         </main>
 
-        <script src='data.js'></script>
         <script src='math.js'></script>
+        <script src='data.js'></script>
         <script src='main.js'></script>
     </body>
 

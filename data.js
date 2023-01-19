@@ -1,4 +1,214 @@
-let data3dF = new Float32Array([
+let shaders = {
+    main: {
+        vertex: document.getElementById('vertex-shader').textContent,
+        fragment: document.getElementById('fragment-shader').textContent,
+    },
+    cube: {
+        vertex: document.getElementById('vertex-shader').textContent,
+        fragment: document.getElementById('fragment-shader').textContent,
+    },
+}
+
+
+let genBuffers = (gl) => {
+    return {
+        cubeVertices: {
+            data: new Float32Array(data3dCube),
+            bufferType: gl.STATIC_DRAW,
+            size: 3,
+            type: gl.FLOAT,
+            normalize: false,
+        },
+
+        cubeColors: {
+            data: new Uint8Array(data3dCubeColor),
+            bufferType: gl.STATIC_DRAW,
+            size: 3,
+            type: gl.UNSIGNED_BYTE,
+            normalize: true,
+        },
+    }
+}
+
+let objects = {
+
+    cube1: {
+        shader: 'main',
+        count: 6 * 6,
+        attributes: {
+            'a_position': 'cubeVertices',
+            'a_color': 'cubeColors',
+        },
+        uniforms: {
+            'objectData': {
+                'u_matrix': {
+                    update: (viewProjectionMatrix, worldMatrix) => {
+                        let matrix = m4.identity()
+                        matrix = m4.multiply(matrix, viewProjectionMatrix)
+                        matrix = m4.scale(matrix, 50, 50, 50)
+                        matrix = m4.multiply(matrix, worldMatrix)
+                        return matrix
+                    },
+                },
+            },
+        },
+    },
+
+    cube2: {
+        shader: 'main',
+        count: 6 * 6,
+        attributes: {
+            'a_position': 'cubeVertices',
+            'a_color': 'cubeColors',
+        },
+        uniforms: {
+            'objectData': {
+                'u_matrix': {
+                    update: (viewProjectionMatrix, worldMatrix) => {
+                        let matrix = m4.identity()
+                        matrix = m4.multiply(matrix, viewProjectionMatrix)
+                        matrix = m4.translate(matrix, 250, 0, 0)
+                        matrix = m4.scale(matrix, 50, 50, 50)
+                        matrix = m4.multiply(matrix, worldMatrix)
+                        return matrix
+                    },
+                },
+            },
+        },
+    },
+
+    cube3: {
+        shader: 'cube',
+        count: 6 * 6,
+        attributes: {
+            'a_position': 'cubeVertices',
+            'a_color': 'cubeColors',
+        },
+        uniforms: {
+            'objectData': {
+                'u_matrix': {
+                    update: (viewProjectionMatrix, worldMatrix) => {
+                        let matrix = m4.identity()
+                        matrix = m4.multiply(matrix, viewProjectionMatrix)
+                        matrix = m4.translate(matrix, -250, 0, 0)
+                        matrix = m4.scale(matrix, 50, 50, 50)
+                        matrix = m4.multiply(matrix, worldMatrix)
+                        return matrix
+                    },
+                },
+            },
+        },
+    },
+}
+
+
+let data3dCube = [
+    // front
+    -1, -1, +1,
+    +1, -1, +1,
+    +1, +1, +1,
+
+    -1, -1, +1,
+    +1, +1, +1,
+    -1, +1, +1,
+
+    // right
+    +1, -1, +1,
+    +1, -1, -1,
+    +1, +1, -1,
+
+    +1, -1, +1,
+    +1, +1, -1,
+    +1, +1, +1,
+
+    // back
+    +1, -1, -1,
+    -1, -1, -1,
+    +1, +1, -1,
+
+    +1, +1, -1,
+    -1, -1, -1,
+    -1, +1, -1,
+
+    // left
+    -1, -1, -1,
+    -1, -1, +1,
+    -1, +1, +1,
+
+    -1, -1, -1,
+    -1, +1, +1,
+    -1, +1, -1,
+
+    // top
+    -1, +1, +1,
+    +1, +1, +1,
+    +1, +1, -1,
+
+    -1, +1, +1,
+    +1, +1, -1,
+    -1, +1, -1,
+
+    // bottom
+    -1, -1, +1,
+    +1, -1, -1,
+    +1, -1, +1,
+
+    -1, -1, +1,
+    -1, -1, -1,
+    +1, -1, -1,
+]
+
+let data3dCubeColor = [
+    // front
+    200,  70, 120,
+    200,  70, 120,
+    200,  70, 120,
+    80,  70, 120,
+    80,  70, 120,
+    80,  70, 120,
+
+    // right
+    80, 70, 200,
+    80, 70, 200,
+    80, 70, 200,
+    160, 160, 220,
+    160, 160, 220,
+    160, 160, 220,
+
+    // back
+    200,  70, 120,
+    200,  70, 120,
+    200,  70, 120,
+    80,  70, 120,
+    80,  70, 120,
+    80,  70, 120,
+
+    // left
+    80, 70, 200,
+    80, 70, 200,
+    80, 70, 200,
+    160, 160, 220,
+    160, 160, 220,
+    160, 160, 220,
+
+    // top
+    76, 170, 100,
+    76, 170, 100,
+    76, 170, 100,
+    140, 170, 80,
+    140, 170, 80,
+    140, 170, 80,
+
+    // bottom
+    76, 170, 100,
+    76, 170, 100,
+    76, 170, 100,
+    140, 170, 80,
+    140, 170, 80,
+    140, 170, 80,
+]
+
+let data3dF = [
     // left column front
     0,   0,  0,
     0, 150,  0,
@@ -6,7 +216,6 @@ let data3dF = new Float32Array([
     0, 150,  0,
     30, 150,  0,
     30,   0,  0,
-
     // top rung front
     30,   0,  0,
     30,  30,  0,
@@ -126,9 +335,9 @@ let data3dF = new Float32Array([
     0,   0,   0,
     0, 150,  30,
     0, 150,   0,
-])
+]
 
-let data3dFColor = new Uint8Array([
+let data3dFColor = [
     // left column front
     200,  70, 120,
     200,  70, 120,
@@ -256,4 +465,4 @@ let data3dFColor = new Uint8Array([
     160, 160, 220,
     160, 160, 220,
     160, 160, 220,
-])
+]
