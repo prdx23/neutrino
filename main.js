@@ -2,39 +2,6 @@ const width = 800
 const height = 800
 
 
-function createProgram(gl, vsSource, fsSource) {
-
-    function createShader(gl, type, source) {
-        let shader = gl.createShader(type)
-        gl.shaderSource(shader, source)
-        gl.compileShader(shader)
-
-        if( !gl.getShaderParameter(shader, gl.COMPILE_STATUS) ) {
-            console.log('Shader Error: ', gl.getShaderInfoLog(shader))
-            gl.deleteShader(shader)
-        }
-
-        return shader
-    }
-
-    let vertexShader = createShader(gl, gl.VERTEX_SHADER, vsSource)
-    let fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fsSource)
-
-    let program = gl.createProgram()
-    gl.attachShader(program, vertexShader)
-    gl.attachShader(program, fragmentShader)
-    gl.linkProgram(program)
-
-    if( !gl.getProgramParameter(program, gl.LINK_STATUS) ) {
-        console.log('Program Error: ', gl.getProgramInfoLog(program))
-        gl.deleteProgram(program)
-    }
-
-    return program
-}
-
-
-
 init()
 
 function init() {
@@ -49,82 +16,20 @@ function init() {
         return
     }
 
-    let buffers = genBuffers(gl)
-
     for( let [name, shader] of Object.entries(shaders) ) {
-        shaders[name].program = createProgram(gl, shader.vertex, shader.fragment)
-        shaders[name].objects = []
+        shaders[name] = new Shader(shader.vertex, shader.fragment)
+        shaders[name].compile(gl)
     }
 
     for( let [name, bufferData] of Object.entries(buffers) ) {
-        let buffer = gl.createBuffer()
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-        gl.bufferData(gl.ARRAY_BUFFER, bufferData.data, bufferData.bufferType)
-        buffers[name].buffer = buffer
-        gl.bindBuffer(gl.ARRAY_BUFFER, null)
+        buffers[name] = new Buffer(...Object.values(bufferData))
+        buffers[name].load(gl)
     }
 
-    let uboIndex = 0
     for( let [name, object] of Object.entries(objects) ) {
-        let program = shaders[object.shader].program
-
-        let vao = gl.createVertexArray()
-        gl.bindVertexArray(vao)
-        objects[name].vao = vao
-
-        for( let attrib of Object.keys(object.attributes) ) {
-            let buffer = buffers[object.attributes[attrib]]
-
-            let location = gl.getAttribLocation(program, attrib)
-            gl.enableVertexAttribArray(location)
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer)
-            gl.vertexAttribPointer(
-                location, buffer.size, buffer.type, buffer.normalize, 0, 0,
-            )
-            gl.bindBuffer(gl.ARRAY_BUFFER, null)
-
-        }
-
-        // for( let uniformName of Object.keys(object.uniforms) ) {
-        //     object.uniforms[uniformName].location = gl.getUniformLocation(
-        //         program, uniformName
-        //     )
-        // }
-
-        for( let [uniformBlockName, uniformBlockData] of Object.entries(object.uniforms) ) {
-            let index = gl.getUniformBlockIndex(program, uniformBlockName)
-            let size = gl.getActiveUniformBlockParameter(
-                program, index, gl.UNIFORM_BLOCK_DATA_SIZE
-            )
-
-            let buffer = gl.createBuffer()
-            gl.bindBuffer(gl.UNIFORM_BUFFER, buffer)
-            gl.bufferData(gl.UNIFORM_BUFFER, size, gl.DYNAMIC_DRAW)
-            gl.bindBuffer(gl.UNIFORM_BUFFER, null)
-
-            uboIndex += 1
-            gl.bindBufferBase(gl.UNIFORM_BUFFER, uboIndex, buffer)
-
-            let variableNames = Object.keys(uniformBlockData)
-            let variableIndices = gl.getUniformIndices(program, variableNames)
-            let variableOffsets = gl.getActiveUniforms(
-                program, variableIndices, gl.UNIFORM_OFFSET
-            )
-
-            for( let [i, variable] of variableNames.entries() ) {
-                object.uniforms[uniformBlockName][variable].index = variableIndices[i]
-                object.uniforms[uniformBlockName][variable].offset = variableOffsets[i]
-            }
-
-            object.uniforms[uniformBlockName].buffer = buffer
-            object.uniforms[uniformBlockName].index = index
-            object.uniforms[uniformBlockName].uboIndex = uboIndex
-            // gl.uniformBlockBinding(program, index, uboIndex)
-        }
-
+        objects[name] = new Object3d(...Object.values(object))
+        objects[name].load(gl, shaders, buffers)
         shaders[object.shader].objects.push(objects[name])
-        gl.bindVertexArray(null)
     }
 
     gl.enable(gl.CULL_FACE)
@@ -165,36 +70,18 @@ function init() {
                 i += 1
                 gl.bindVertexArray(object.vao)
 
-
                 let objectMatrix = m4.identity()
                 objectMatrix = m4.yRotate(objectMatrix, -x * 0.5 * i * Math.PI / 180)
                 objectMatrix = m4.xRotate(objectMatrix, -x * 0.5 * i * Math.PI / 180)
-                // object.uniforms['u_matrix'].update(
-                //     gl,
-                //     object.uniforms['u_matrix'].location,
-                //     viewProjectionMatrix,
-                //     objectMatrix,
-                // )
-                let matrix = object.uniforms.objectData.u_matrix.update(
+                let matrix = object.uniforms.u_matrix.update(
                     viewProjectionMatrix, objectMatrix
                 )
-
-                gl.bindBuffer(gl.UNIFORM_BUFFER, object.uniforms.objectData.buffer)
-                gl.bufferSubData(
-                    gl.UNIFORM_BUFFER,
-                    object.uniforms.objectData.u_matrix.offset,
-                    new Float32Array(matrix),
-                    0
-                )
-                gl.uniformBlockBinding(
-                    shader.program,
-                    object.uniforms.objectData.index,
-                    object.uniforms.objectData.uboIndex,
+                object.uniformBlocks['objectData'].update(
+                    gl, shader.program, 'u_matrix', new Float32Array(matrix)
                 )
 
                 gl.drawArrays(gl.TRIANGLES, 0, object.count)
                 gl.bindVertexArray(null)
-                gl.bindBuffer(gl.UNIFORM_BUFFER, null)
             }
 
         }

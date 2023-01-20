@@ -1,107 +1,3 @@
-let shaders = {
-    main: {
-        vertex: document.getElementById('vertex-shader').textContent,
-        fragment: document.getElementById('fragment-shader').textContent,
-    },
-    cube: {
-        vertex: document.getElementById('vertex-shader').textContent,
-        fragment: document.getElementById('fragment-shader').textContent,
-    },
-}
-
-
-let genBuffers = (gl) => {
-    return {
-        cubeVertices: {
-            data: new Float32Array(data3dCube),
-            bufferType: gl.STATIC_DRAW,
-            size: 3,
-            type: gl.FLOAT,
-            normalize: false,
-        },
-
-        cubeColors: {
-            data: new Uint8Array(data3dCubeColor),
-            bufferType: gl.STATIC_DRAW,
-            size: 3,
-            type: gl.UNSIGNED_BYTE,
-            normalize: true,
-        },
-    }
-}
-
-let objects = {
-
-    cube1: {
-        shader: 'main',
-        count: 6 * 6,
-        attributes: {
-            'a_position': 'cubeVertices',
-            'a_color': 'cubeColors',
-        },
-        uniforms: {
-            'objectData': {
-                'u_matrix': {
-                    update: (viewProjectionMatrix, worldMatrix) => {
-                        let matrix = m4.identity()
-                        matrix = m4.multiply(matrix, viewProjectionMatrix)
-                        matrix = m4.scale(matrix, 50, 50, 50)
-                        matrix = m4.multiply(matrix, worldMatrix)
-                        return matrix
-                    },
-                },
-            },
-        },
-    },
-
-    cube2: {
-        shader: 'main',
-        count: 6 * 6,
-        attributes: {
-            'a_position': 'cubeVertices',
-            'a_color': 'cubeColors',
-        },
-        uniforms: {
-            'objectData': {
-                'u_matrix': {
-                    update: (viewProjectionMatrix, worldMatrix) => {
-                        let matrix = m4.identity()
-                        matrix = m4.multiply(matrix, viewProjectionMatrix)
-                        matrix = m4.translate(matrix, 250, 0, 0)
-                        matrix = m4.scale(matrix, 50, 50, 50)
-                        matrix = m4.multiply(matrix, worldMatrix)
-                        return matrix
-                    },
-                },
-            },
-        },
-    },
-
-    cube3: {
-        shader: 'cube',
-        count: 6 * 6,
-        attributes: {
-            'a_position': 'cubeVertices',
-            'a_color': 'cubeColors',
-        },
-        uniforms: {
-            'objectData': {
-                'u_matrix': {
-                    update: (viewProjectionMatrix, worldMatrix) => {
-                        let matrix = m4.identity()
-                        matrix = m4.multiply(matrix, viewProjectionMatrix)
-                        matrix = m4.translate(matrix, -250, 0, 0)
-                        matrix = m4.scale(matrix, 50, 50, 50)
-                        matrix = m4.multiply(matrix, worldMatrix)
-                        return matrix
-                    },
-                },
-            },
-        },
-    },
-}
-
-
 let data3dCube = [
     // front
     -1, -1, +1,
@@ -207,6 +103,112 @@ let data3dCubeColor = [
     140, 170, 80,
     140, 170, 80,
 ]
+
+let shaders = {
+    main: {
+        vertex: document.getElementById('vertex-shader').textContent,
+        fragment: document.getElementById('fragment-shader').textContent,
+    },
+    cube: {
+        vertex: document.getElementById('vertex-shader').textContent,
+        fragment: document.getElementById('fragment-shader').textContent,
+    },
+}
+
+
+let buffers = {
+    cubeVertices: {
+        data: new Float32Array(data3dCube),
+        bufferType: 'STATIC_DRAW',
+        size: 3,
+        type: 'FLOAT',
+        normalize: false,
+    },
+
+    cubeColors: {
+        data: new Uint8Array(data3dCubeColor),
+        bufferType: 'STATIC_DRAW',
+        size: 3,
+        type: 'UNSIGNED_BYTE',
+        normalize: true,
+    },
+}
+
+
+let objects = {
+
+    cube1: {
+        shader: 'main',
+        count: 6 * 6,
+        attributes: {
+            'a_position': 'cubeVertices',
+            'a_color': 'cubeColors',
+        },
+        uniformBlocks: {
+            'objectData': ['u_matrix'],
+        },
+        uniforms: {
+            'u_matrix': {
+                update: (viewProjectionMatrix, worldMatrix) => {
+                    let matrix = m4.identity()
+                    matrix = m4.multiply(matrix, viewProjectionMatrix)
+                    matrix = m4.scale(matrix, 50, 50, 50)
+                    matrix = m4.multiply(matrix, worldMatrix)
+                    return matrix
+                },
+            },
+        },
+    },
+
+    cube2: {
+        shader: 'main',
+        count: 6 * 6,
+        attributes: {
+            'a_position': 'cubeVertices',
+            'a_color': 'cubeColors',
+        },
+
+        uniformBlocks: {
+            'objectData': ['u_matrix'],
+        },
+        uniforms: {
+            'u_matrix': {
+                update: (viewProjectionMatrix, worldMatrix) => {
+                    let matrix = m4.identity()
+                    matrix = m4.multiply(matrix, viewProjectionMatrix)
+                    matrix = m4.translate(matrix, 250, 0, 0)
+                    matrix = m4.scale(matrix, 50, 50, 50)
+                    matrix = m4.multiply(matrix, worldMatrix)
+                    return matrix
+                },
+            },
+        },
+    },
+
+    cube3: {
+        shader: 'cube',
+        count: 6 * 6,
+        attributes: {
+            'a_position': 'cubeVertices',
+            'a_color': 'cubeColors',
+        },
+        uniformBlocks: {
+            'objectData': ['u_matrix'],
+        },
+        uniforms: {
+            'u_matrix': {
+                update: (viewProjectionMatrix, worldMatrix) => {
+                    let matrix = m4.identity()
+                    matrix = m4.multiply(matrix, viewProjectionMatrix)
+                    matrix = m4.translate(matrix, -250, 0, 0)
+                    matrix = m4.scale(matrix, 50, 50, 50)
+                    matrix = m4.multiply(matrix, worldMatrix)
+                    return matrix
+                },
+            },
+        },
+    },
+}
 
 let data3dF = [
     // left column front
