@@ -1,3 +1,8 @@
+import { m4 } from './math.js'
+import { shaders, buffers, objects } from './data.js'
+import { Shader, Buffer, Object3d } from './webgl.js'
+
+
 const width = 800
 const height = 800
 

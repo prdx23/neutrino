@@ -1,5 +1,5 @@
 
-let Shader = function(vertex, fragment) {
+export let Shader = function(vertex, fragment) {
 
     this.vertex = vertex
     this.fragment = fragment
@@ -38,7 +38,7 @@ let Shader = function(vertex, fragment) {
 }
 
 
-let Buffer = function(data, drawType, size, type, normalize) {
+export let Buffer = function(data, drawType, size, type, normalize) {
 
     this.data = data
     this.drawType = drawType
@@ -74,7 +74,7 @@ let Buffer = function(data, drawType, size, type, normalize) {
 
 let globalUboIndex = 0
 
-let UniformBlock = function(name, variables) {
+export let UniformBlock = function(name, variables) {
 
     this.name = name
     this.buffer = null
@@ -123,7 +123,7 @@ let UniformBlock = function(name, variables) {
 }
 
 
-let Object3d = function(shader, count, attributes, uniformBlocks, uniforms) {
+export let Object3d = function(shader, count, attributes, uniformBlocks, uniforms) {
 
     this.shader = shader
     this.count = count

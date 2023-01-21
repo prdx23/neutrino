@@ -1,3 +1,5 @@
+import { m4 } from './math.js'
+
 let data3dCube = [
     // front
     -1, -1, +1,
@@ -104,7 +106,7 @@ let data3dCubeColor = [
     140, 170, 80,
 ]
 
-let shaders = {
+export let shaders = {
     main: {
         vertex: document.getElementById('vertex-shader').textContent,
         fragment: document.getElementById('fragment-shader').textContent,
@@ -116,7 +118,7 @@ let shaders = {
 }
 
 
-let buffers = {
+export let buffers = {
     cubeVertices: {
         data: new Float32Array(data3dCube),
         bufferType: 'STATIC_DRAW',
@@ -135,7 +137,7 @@ let buffers = {
 }
 
 
-let objects = {
+export let objects = {
 
     cube1: {
         shader: 'main',

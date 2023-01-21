@@ -1,5 +1,5 @@
 
-var m4 = {
+export let m4 = {
 
     identity: function () {
         return [
