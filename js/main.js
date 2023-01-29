@@ -2,12 +2,32 @@ import { m4 } from './math.js'
 import { shaders, buffers, objects } from './data.js'
 import { Shader, Buffer, Object3d } from './webgl.js'
 
+import wasmInit from '../pkg/neutrino_demo.js'
+import * as wasm from '../pkg/neutrino_demo.js'
+
+
+let game
+
+async function run() {
+    let w = await wasmInit()
+
+    game = new wasm.Game()
+    game.init()
+
+    let ptr = game.test()
+    console.log(ptr, wasm, w)
+    console.log(w.memory)
+    console.log(new Float32Array(w.memory.buffer, ptr, 3))
+
+    init()
+}
+run()
+
 
 const width = 800
 const height = 800
 
 
-init()
 
 function init() {
 
@@ -75,9 +95,11 @@ function init() {
                 i += 1
                 gl.bindVertexArray(object.vao)
 
+                let j = i
+                // let j = game.get_object(i-1)
                 let objectMatrix = m4.identity()
-                objectMatrix = m4.yRotate(objectMatrix, -x * 0.5 * i * Math.PI / 180)
-                objectMatrix = m4.xRotate(objectMatrix, -x * 0.5 * i * Math.PI / 180)
+                objectMatrix = m4.yRotate(objectMatrix, -x * 0.5 * j * Math.PI / 180)
+                objectMatrix = m4.xRotate(objectMatrix, -x * 0.5 * j * Math.PI / 180)
                 let matrix = object.uniforms.u_matrix.update(
                     viewProjectionMatrix, objectMatrix
                 )
