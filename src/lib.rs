@@ -1,9 +1,32 @@
 // use wasm_bindgen::prelude::*;
+use std::panic;
 
 
 #[link(wasm_import_module = "imports")]
 extern {
     fn console_log(x: *const u8, l: usize);
+    fn console_error(x: *const u8, l: usize);
+}
+
+fn set_panic_hook() {
+    panic::set_hook(Box::new(|panic_info| {
+        let mut msg = "Panic occurred".to_string();
+
+        if let Some(location) = panic_info.location() {
+            msg.push_str(format!(" in file '{}' at line {}",
+                location.file(),
+                location.line(),
+            ).as_str());
+        }
+
+        if let Some(e) = panic_info.payload().downcast_ref::<&str>() {
+            msg.push_str(format!(": {}", e).as_str());
+        }
+
+        unsafe {
+            console_error(msg.as_ptr(), msg.len());
+        }
+    }));
 }
 
 
@@ -17,8 +40,9 @@ fn console_print(text: &str) {
 
 #[no_mangle]
 pub extern fn test() -> f32 {
+    set_panic_hook();
     console_print(format!("this is some string! {}", 123).as_str());
-    // panic!("panic!");
+    panic!("panic!");
     1234.0
 }
 

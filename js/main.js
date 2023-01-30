@@ -9,6 +9,7 @@ import { Shader, Buffer, Object3d } from './webgl.js'
 const width = 800
 const height = 800
 
+const textDecoder = new TextDecoder()
 let wasm
 
 async function run() {
@@ -25,11 +26,19 @@ async function run() {
     const importObject = {
         imports: {
             console_log: (ptr, len) => {
-                const decoder = new TextDecoder()
                 const data = new Uint8Array(
                     wasm.instance.exports.memory.buffer, ptr, len
                 )
-                console.log(decoder.decode(data))
+                console.log(textDecoder.decode(data))
+            },
+            console_error: (ptr, len) => {
+                const data = new Uint8Array(
+                    wasm.instance.exports.memory.buffer, ptr, len
+                )
+                let error = new Error()
+                console.error(
+                    textDecoder.decode(data) + '\n\n' + error.stack
+                )
             }
         },
     }
