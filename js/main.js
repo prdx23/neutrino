@@ -2,34 +2,55 @@ import { m4 } from './math.js'
 import { shaders, buffers, objects } from './data.js'
 import { Shader, Buffer, Object3d } from './webgl.js'
 
-import wasmInit from '../pkg/neutrino_demo.js'
-import * as wasm from '../pkg/neutrino_demo.js'
-
-
-let game
-
-async function run() {
-    let w = await wasmInit()
-
-    game = new wasm.Game()
-    game.init()
-
-    let ptr = game.test()
-    console.log(ptr, wasm, w)
-    console.log(w.memory)
-    console.log(new Float32Array(w.memory.buffer, ptr, 3))
-
-    init()
-}
-run()
+// import wasmInit from '../pkg/neutrino_demo.js'
+// import * as wasm from '../pkg/neutrino_demo.js'
 
 
 const width = 800
 const height = 800
 
+let wasm
+
+async function run() {
+    // let w = await wasmInit()
+
+    // game = new wasm.Game()
+    // game.init()
+
+    // let ptr = game.test()
+    // console.log(ptr, wasm, w)
+    // console.log(w.memory)
+    // console.log(new Float32Array(w.memory.buffer, ptr, 3))
+
+    const importObject = {
+        imports: {
+            console_log: (ptr, len) => {
+                const decoder = new TextDecoder()
+                const data = new Uint8Array(
+                    wasm.instance.exports.memory.buffer, ptr, len
+                )
+                console.log(decoder.decode(data))
+            }
+        },
+    }
+
+
+    let file = 'target/wasm32-unknown-unknown/debug/neutrino_demo.wasm'
+    WebAssembly.instantiateStreaming(fetch(file), importObject).then(
+        (results) => {
+            wasm = results
+            console.log(wasm)
+            init()
+        }
+    )
+
+}
+run()
+
 
 
 function init() {
+    console.log(wasm.instance.exports.test())
 
     const canvas = document.getElementById('canvas')
     canvas.width = width
