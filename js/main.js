@@ -2,9 +2,6 @@ import { m4 } from './math.js'
 import { shaders, buffers, objects } from './data.js'
 import { Shader, Buffer, Object3d } from './webgl.js'
 
-// import wasmInit from '../pkg/neutrino_demo.js'
-// import * as wasm from '../pkg/neutrino_demo.js'
-
 
 const width = 800
 const height = 800
@@ -13,15 +10,6 @@ const textDecoder = new TextDecoder()
 let wasm
 
 async function run() {
-    // let w = await wasmInit()
-
-    // game = new wasm.Game()
-    // game.init()
-
-    // let ptr = game.test()
-    // console.log(ptr, wasm, w)
-    // console.log(w.memory)
-    // console.log(new Float32Array(w.memory.buffer, ptr, 3))
 
     const importObject = {
         imports: {
@@ -45,21 +33,16 @@ async function run() {
 
 
     let file = 'target/wasm32-unknown-unknown/debug/neutrino_demo.wasm'
-    WebAssembly.instantiateStreaming(fetch(file), importObject).then(
-        (results) => {
-            wasm = results
-            console.log(wasm)
-            init()
-        }
-    )
-
+    wasm = await WebAssembly.instantiateStreaming(fetch(file), importObject)
+    console.log(wasm)
+    init()
 }
 run()
 
 
 
 function init() {
-    console.log(wasm.instance.exports.test())
+    let gameptr = wasm.instance.exports.init()
 
     const canvas = document.getElementById('canvas')
     canvas.width = width
@@ -98,24 +81,34 @@ function init() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 
-        let cameraMatrix = m4.identity()
-        cameraMatrix = m4.translate(cameraMatrix, 0, 300, 1800)
-        cameraMatrix = m4.lookAt(
-            [cameraMatrix[12], cameraMatrix[13], cameraMatrix[14]],
-            [0, 0, 0],
-            [0, 1, 0],
+        // let cameraMatrix = m4.identity()
+        // cameraMatrix = m4.translate(cameraMatrix, 0, 300, 1800)
+        // cameraMatrix = m4.lookAt(
+        //     [cameraMatrix[12], cameraMatrix[13], cameraMatrix[14]],
+        //     [0, 0, 0],
+        //     [0, 1, 0],
+        // )
+
+        // let viewMatrix = m4.inverse(cameraMatrix)
+
+        // let projectionMatrix = m4.perspective(
+        //     30 * Math.PI / 180,
+        //     gl.canvas.clientWidth / gl.canvas.clientHeight,
+        //     1, 2000,
+        // )
+
+        // let viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix)
+
+        // console.log('js ->', projectionMatrix)
+        // console.log('js ->', viewProjectionMatrix)
+
+        let bufferptr = wasm.instance.exports.test(
+            gameptr, gl.canvas.clientWidth, gl.canvas.clientHeight,
         )
-
-        let viewMatrix = m4.inverse(cameraMatrix)
-
-        let projectionMatrix = m4.perspective(
-            30 * Math.PI / 180,
-            gl.canvas.clientWidth / gl.canvas.clientHeight,
-            1, 2000,
+        const buffer = new Float32Array(
+            wasm.instance.exports.memory.buffer, bufferptr, 16
         )
-
-        let viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix)
-
+        // console.log(buffer)
 
         let i = 0
         for( let shader of Object.values(shaders) ) {
@@ -131,7 +124,8 @@ function init() {
                 objectMatrix = m4.yRotate(objectMatrix, -x * 0.5 * j * Math.PI / 180)
                 objectMatrix = m4.xRotate(objectMatrix, -x * 0.5 * j * Math.PI / 180)
                 let matrix = object.uniforms.u_matrix.update(
-                    viewProjectionMatrix, objectMatrix
+                    // viewProjectionMatrix, objectMatrix
+                    buffer, objectMatrix
                 )
                 object.uniformBlocks['objectData'].update(
                     gl, shader.program, 'u_matrix', new Float32Array(matrix)

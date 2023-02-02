@@ -1,5 +1,11 @@
-// use wasm_bindgen::prelude::*;
 use std::panic;
+
+
+mod game;
+mod math;
+
+use crate::game::Game;
+use crate::math::{Vec3, Matrix4};
 
 
 #[link(wasm_import_module = "imports")]
@@ -39,59 +45,12 @@ fn console_print(text: &str) {
 
 
 #[no_mangle]
-pub extern fn test() -> f32 {
+pub extern fn init() -> *mut Game {
     set_panic_hook();
-    console_print(format!("this is some string! {}", 123).as_str());
-    panic!("panic!");
-    1234.0
+    Box::into_raw(Box::new(Game::init()))
 }
 
-
-// #[wasm_bindgen]
-// // #[derive(Clone, Copy)]
-// pub struct Object3d {
-//     pub test: f32,
-// }
-
-
-// // #[wasm_bindgen]
-// #[wasm_bindgen(getter_with_clone)]
-// pub struct Game {
-//     objects: Vec<Object3d>,
-// }
-
-
-// #[wasm_bindgen]
-// impl Game {
-
-//     #[wasm_bindgen(constructor)]
-//     pub fn new() -> Self {
-//         Self { objects: vec![] }
-//     }
-
-//     pub fn init(&mut self) {
-
-//         self.objects = vec![
-//             Object3d {
-//                 test: 1.0
-//             },
-
-//             Object3d {
-//                 test: 2.0
-//             },
-
-//             Object3d {
-//                 test: 3.0
-//             },
-//         ]
-
-//     }
-
-//     pub fn get_object(&self, id: usize) -> f32 {
-//         self.objects[id].test
-//     }
-
-//     pub fn test(self) -> *const Object3d {
-//         self.objects.as_ptr()
-//     }
-// }
+#[no_mangle]
+pub extern fn test(ptr: *mut Game, cw: f32, ch: f32) -> *const f32 {
+    Game::test(ptr, cw, ch)
+}
