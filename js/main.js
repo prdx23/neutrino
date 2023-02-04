@@ -33,7 +33,8 @@ async function run() {
     }
 
 
-    let file = 'target/wasm32-unknown-unknown/debug/neutrino_demo.wasm'
+    // let file = 'target/wasm32-unknown-unknown/debug/neutrino_demo.wasm'
+    let file = 'target/wasm32-unknown-unknown/release/neutrino_demo.wasm'
     wasm = await WebAssembly.instantiateStreaming(fetch(file), importObject)
     console.log(wasm)
     BUFFER_SIZE = new Uint32Array(

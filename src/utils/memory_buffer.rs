@@ -18,7 +18,7 @@ pub struct MemoryBuffer {
 
 impl MemoryBuffer {
 
-    pub fn new() -> Self {
+    pub fn empty() -> Self {
         Self {
             current: 1,
             buffer: [0.0; BUFFER_SIZE],

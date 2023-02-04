@@ -1,5 +1,5 @@
 
-use crate::{ Vec3, Matrix4 };
+use crate::math::{ Vec3, Matrix4 };
 
 // #[derive(Clone, Copy)]
 pub struct Camera {

@@ -1,10 +1,8 @@
 use std::ops::{ Mul, MulAssign };
+use crate::math::Vec3;
 
 
-use crate::Vec3;
-
-
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Matrix4 {
     pub matrix: [[f32; 4]; 4],
 }

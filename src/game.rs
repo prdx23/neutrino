@@ -7,9 +7,10 @@ pub mod camera;
 pub use camera::Camera;
 
 use crate::utils::MemoryBuffer;
+use crate::utils::ObjectArray;
 
 pub struct Game {
-    pub objects: Vec<Object3d>,
+    pub objects: ObjectArray,
     pub buffer: MemoryBuffer,
     pub camera: Camera,
 }

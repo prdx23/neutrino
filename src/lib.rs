@@ -7,7 +7,7 @@ mod utils;
 
 use crate::game::{Game, Object3d, Camera};
 use crate::math::{Vec3, Matrix4};
-use crate::utils::{MemoryBuffer};
+use crate::utils::{MemoryBuffer, ObjectArray};
 
 
 #[link(wasm_import_module = "imports")]
@@ -49,35 +49,34 @@ fn console_print(text: &str) {
 #[no_mangle]
 pub extern fn init() -> *mut Game {
     set_panic_hook();
-    let game = Game {
+    let mut game = Game {
         camera: Camera::perspective(
             Vec3::new(0.0, 300.0, 1800.0),
             30.0, 1.0, 1.0, 2500.0
         ),
-        buffer: MemoryBuffer::new(),
-        objects: vec![
-            Object3d {
-                id: 1.0,
-                position: Vec3::zero(),
-                scale: Vec3::new(50.0, 50.0, 50.0),
-                rotation: Vec3::zero(),
-            },
-
-            Object3d {
-                id: 2.0,
-                position: Vec3::new(250.0, 0.0, 0.0),
-                scale: Vec3::new(50.0, 50.0, 50.0),
-                rotation: Vec3::zero(),
-            },
-
-            Object3d {
-                id: 3.0,
-                position: Vec3::new(-250.0, 0.0, 0.0),
-                scale: Vec3::new(50.0, 50.0, 50.0),
-                rotation: Vec3::zero(),
-            },
-        ]
+        buffer: MemoryBuffer::empty(),
+        objects: ObjectArray::empty(),
     };
+
+    game.objects.add_object(Object3d {
+        id: 1.0,
+        position: Vec3::zero(),
+        scale: Vec3::new(50.0, 50.0, 50.0),
+        rotation: Vec3::zero(),
+    });
+    game.objects.add_object(Object3d {
+        id: 2.0,
+        position: Vec3::new(250.0, 0.0, 0.0),
+        scale: Vec3::new(50.0, 50.0, 50.0),
+        rotation: Vec3::zero(),
+    });
+    game.objects.add_object(Object3d {
+        id: 3.0,
+        position: Vec3::new(-250.0, 0.0, 0.0),
+        scale: Vec3::new(50.0, 50.0, 50.0),
+        rotation: Vec3::zero(),
+    });
+
     Box::into_raw(Box::new(game))
 }
 
@@ -93,7 +92,8 @@ pub extern fn render(ptr: *mut Game, t: f32) -> *const f32 {
     let view_projection_matrix = game.camera.view_projection_matrix();
     // game.buffer.add_matrix(&view_projection_matrix);
 
-    for x in &mut game.objects {
+    for x in game.objects.iter_mut() {
+        // console_print(format!("id {}", x.id).as_str());
         game.buffer.add_f32(x.id);
         game.buffer.add_f32(16.0);
         game.buffer.add_f32(0.0);
