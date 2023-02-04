@@ -34,12 +34,20 @@ impl Matrix4 {
         }
     }
 
-    pub fn translate(&mut self, tx: f32, ty: f32, tz: f32) {
-        *self *= Matrix4::translation(tx, ty, tz);
+    pub fn translate(&mut self, pos: Vec3) {
+        *self *= Matrix4::translation(pos.x, pos.y, pos.z);
     }
 
-    pub fn translate_vec(&mut self, pos: Vec3) {
-        *self *= Matrix4::translation(pos.x, pos.y, pos.z);
+    pub fn translate_x(&mut self, tx: f32) {
+        *self *= Matrix4::translation(tx, 0.0, 0.0);
+    }
+
+    pub fn translate_y(&mut self, ty: f32) {
+        *self *= Matrix4::translation(0.0, ty, 0.0);
+    }
+
+    pub fn translate_z(&mut self, tz: f32) {
+        *self *= Matrix4::translation(0.0, 0.0, tz);
     }
 
 
@@ -55,8 +63,20 @@ impl Matrix4 {
     }
 
 
-    pub fn scale(&mut self, sx: f32, sy: f32, sz: f32) {
-        *self *= Matrix4::scaling(sx, sy, sz);
+    pub fn scale(&mut self, scales: Vec3) {
+        *self *= Matrix4::scaling(scales.x, scales.y, scales.z);
+    }
+
+    pub fn scale_x(&mut self, sx: f32) {
+        *self *= Matrix4::scaling(sx, 1.0, 1.0);
+    }
+
+    pub fn scale_y(&mut self, sy: f32) {
+        *self *= Matrix4::scaling(1.0, sy, 1.0);
+    }
+
+    pub fn scale_z(&mut self, sz: f32) {
+        *self *= Matrix4::scaling(1.0, 1.0, sz);
     }
 
 
@@ -109,6 +129,13 @@ impl Matrix4 {
 
     pub fn rotate_z(&mut self, theta: f32) {
         *self *= Matrix4::rotation_z(theta);
+    }
+
+
+    pub fn rotate(&mut self, angles: Vec3) {
+        self.rotate_x(angles.x);
+        self.rotate_y(angles.y);
+        self.rotate_z(angles.z);
     }
 
 
@@ -168,17 +195,6 @@ impl Matrix4 {
         }
     }
 
-
-    pub fn add_to_buffer(&self, buffer: &mut Vec<f32>) {
-        // buffer.push(1.0); // type 1 = Float32Array
-        // buffer.push(16.0); // no of f32 values
-        for row in self.matrix {
-            for value in row {
-                // buffer.extend_from_slice(&value.to_le_bytes());
-                buffer.push(value);
-            }
-        }
-    }
 
 
     pub fn cofactor(

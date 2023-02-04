@@ -8,6 +8,7 @@ const height = 800
 
 const textDecoder = new TextDecoder()
 let wasm
+let BUFFER_SIZE
 
 async function run() {
 
@@ -35,6 +36,9 @@ async function run() {
     let file = 'target/wasm32-unknown-unknown/debug/neutrino_demo.wasm'
     wasm = await WebAssembly.instantiateStreaming(fetch(file), importObject)
     console.log(wasm)
+    BUFFER_SIZE = new Uint32Array(
+        WebAssembly.Module.customSections(wasm.module, 'BUFFER_SIZE'
+    )[0])[0]
     init()
 }
 run()
@@ -80,43 +84,18 @@ function init() {
         gl.clearColor(0, 0, 0, 1)
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-
-        // let cameraMatrix = m4.identity()
-        // cameraMatrix = m4.translate(cameraMatrix, 0, 300, 1800)
-        // cameraMatrix = m4.lookAt(
-        //     [cameraMatrix[12], cameraMatrix[13], cameraMatrix[14]],
-        //     [0, 0, 0],
-        //     [0, 1, 0],
-        // )
-
-        // let viewMatrix = m4.inverse(cameraMatrix)
-
-        // let projectionMatrix = m4.perspective(
-        //     30 * Math.PI / 180,
-        //     gl.canvas.clientWidth / gl.canvas.clientHeight,
-        //     1, 2000,
-        // )
-
-        // let viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix)
-
-        // console.log('js ->', projectionMatrix)
-        // console.log('js ->', viewProjectionMatrix)
-
-        let bufferptr = wasm.instance.exports.render(
-            gameptr, t, gl.canvas.clientWidth, gl.canvas.clientHeight,
-        )
+        // gl.canvas.clientWidth, gl.canvas.clientHeight,
+        let bufferptr = wasm.instance.exports.render(gameptr, t)
         const buffer = new Float32Array(
-            // wasm.instance.exports.memory.buffer, bufferptr, 16
-            wasm.instance.exports.memory.buffer, bufferptr, 1000
+            wasm.instance.exports.memory.buffer, bufferptr, BUFFER_SIZE
         )
         // console.log(buffer)
 
         let b = 0
-
         let bufferLen = buffer[b++]
 
-        let viewProjectionMatrix = buffer.slice(b, b + 16)
-        b += 16
+        // let viewProjectionMatrix = buffer.slice(b, b + 16)
+        // b += 16
 
         let data = {}
 
@@ -132,18 +111,6 @@ function init() {
             b += data[id].len
         }
 
-        // console.log(data[1].data)
-        // console.log(b, bufferLen)
-
-
-
-
-
-
-
-
-
-
 
         let i = 0
         for( let shader of Object.values(shaders) ) {
@@ -153,21 +120,10 @@ function init() {
                 i += 1
                 gl.bindVertexArray(object.vao)
 
-                // let j = i
-                // let j = game.get_object(i-1)
-                // let objectMatrix = m4.identity()
-                // objectMatrix = m4.yRotate(objectMatrix, -t * 0.5 * j * Math.PI / 180)
-                // objectMatrix = m4.xRotate(objectMatrix, -t * 0.5 * j * Math.PI / 180)
-                // let matrixtemp = object.uniforms.u_matrix.update(
-                //     viewProjectionMatrix, objectMatrix
-                //     // buffer, objectMatrix
-                // )
                 let matrix = data[i].data
                 object.uniformBlocks['objectData'].update(
-                    // gl, shader.program, 'u_matrix', new Float32Array(matrix)
                     gl, shader.program, 'u_matrix', matrix
                 )
-                // console.log(matrix, matrixtemp)
 
                 gl.drawArrays(gl.TRIANGLES, 0, object.count)
                 gl.bindVertexArray(null)
