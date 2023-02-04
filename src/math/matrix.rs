@@ -38,6 +38,10 @@ impl Matrix4 {
         *self *= Matrix4::translation(tx, ty, tz);
     }
 
+    pub fn translate_vec(&mut self, pos: Vec3) {
+        *self *= Matrix4::translation(pos.x, pos.y, pos.z);
+    }
+
 
     fn scaling(sx: f32, sy: f32, sz: f32) -> Self {
         Self {
@@ -104,7 +108,7 @@ impl Matrix4 {
     }
 
     pub fn rotate_z(&mut self, theta: f32) {
-        *self *= Matrix4::rotation_y(theta);
+        *self *= Matrix4::rotation_z(theta);
     }
 
 
@@ -165,7 +169,7 @@ impl Matrix4 {
     }
 
 
-    pub fn add_bytes_to_buffer(&self, buffer: &mut Vec<f32>) {
+    pub fn add_to_buffer(&self, buffer: &mut Vec<f32>) {
         // buffer.push(1.0); // type 1 = Float32Array
         // buffer.push(16.0); // no of f32 values
         for row in self.matrix {

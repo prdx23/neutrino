@@ -160,6 +160,7 @@ export let objects = {
                 },
             },
         },
+        id: 1,
     },
 
     cube2: {
@@ -185,6 +186,7 @@ export let objects = {
                 },
             },
         },
+        id: 2,
     },
 
     cube3: {
@@ -209,6 +211,7 @@ export let objects = {
                 },
             },
         },
+        id: 3,
     },
 }
 

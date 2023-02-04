@@ -123,13 +123,14 @@ export let UniformBlock = function(name, variables) {
 }
 
 
-export let Object3d = function(shader, count, attributes, uniformBlocks, uniforms) {
+export let Object3d = function(shader, count, attributes, uniformBlocks, uniforms, id) {
 
     this.shader = shader
     this.count = count
     this.attributes = attributes
     this.uniformBlocks = uniformBlocks
     this.uniforms = uniforms
+    this.id = id
     this.vao = null
 
     this.load = function(gl, shaders, buffers, uboIndex) {

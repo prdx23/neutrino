@@ -51,6 +51,49 @@ pub extern fn init() -> *mut Game {
 }
 
 #[no_mangle]
-pub extern fn test(ptr: *mut Game, cw: f32, ch: f32) -> *const f32 {
-    Game::test(ptr, cw, ch)
+pub extern fn render(ptr: *mut Game, t: f32, cw: f32, ch: f32) -> *const f32 {
+    let game = unsafe {
+        assert!(!ptr.is_null());
+        &mut *ptr
+    };
+    game.buffer.clear();
+    game.buffer.push(0.0);
+
+    let mut camera_matrix = Matrix4::identity();
+    camera_matrix.translate(0.0, 300.0, 1800.0);
+
+    camera_matrix = Matrix4::look_at(
+        Vec3::new(
+            camera_matrix.matrix[3][0],
+            camera_matrix.matrix[3][1],
+            camera_matrix.matrix[3][2]),
+        Vec3::zero(),
+        Vec3::new(0.0, 1.0, 0.0)
+    );
+
+    let view_matrix = camera_matrix.inverse();
+
+    let projection_matrix = Matrix4::perspective(
+        30.0, cw / ch, 1.0, 2500.0
+    );
+
+    let view_projection_matrix = projection_matrix * view_matrix;
+
+    // crate::console_print(format!("x {}", t).as_str());
+    // crate::console_print(format!("cw {}", cw).as_str());
+    // crate::console_print(format!("ch {}", ch).as_str());
+    view_projection_matrix.add_to_buffer(&mut game.buffer);
+
+    for x in &game.objects {
+        // crate::console_print(format!("{}", x.test).as_str());
+        let matrix = x.update(t, view_projection_matrix);
+        game.buffer.push(x.id);
+        game.buffer.push(16.0);
+        game.buffer.push(0.0);
+        game.buffer.push(0.0);
+        matrix.add_to_buffer(&mut game.buffer);
+    }
+
+    game.buffer[0] = game.buffer.len() as f32;
+    game.buffer.as_ptr()
 }
