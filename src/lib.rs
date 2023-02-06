@@ -1,5 +1,3 @@
-use std::panic;
-
 
 mod engine;
 mod math;
@@ -12,46 +10,29 @@ use crate::utils::{MemoryBuffer, ObjectArray};
 
 #[link(wasm_import_module = "imports")]
 extern {
-    fn console_log(x: *const u8, l: usize);
-    fn console_error(x: *const u8, l: usize);
+
+    fn console_log_raw(x: *const u8, l: usize);
+
+    fn console_error_raw(x: *const u8, l: usize);
+
+    fn add_shader(
+        name_ptr: *const u8, name_len: usize,
+        vert_ptr: *const u8, vert_len: usize,
+        frag_ptr: *const u8, frag_len: usize,
+    );
 
     fn add_object(id: usize, ptr: *const u8, len: usize);
+
 }
-
-fn set_panic_hook() {
-    panic::set_hook(Box::new(|panic_info| {
-        let mut msg = "Panic occurred".to_string();
-
-        if let Some(location) = panic_info.location() {
-            msg.push_str(format!(" in file '{}' at line {}",
-                location.file(),
-                location.line(),
-            ).as_str());
-        }
-
-        if let Some(e) = panic_info.payload().downcast_ref::<&str>() {
-            msg.push_str(format!(": {}", e).as_str());
-        }
-
-        unsafe {
-            console_error(msg.as_ptr(), msg.len());
-        }
-    }));
-}
-
-
-fn console_print(text: &str) {
-    unsafe {
-        console_log(text.as_ptr(), text.len());
-    }
-}
-
 
 
 #[no_mangle]
 pub extern fn init() -> *mut Engine {
 
-    set_panic_hook();
+    utils::set_panic_hook();
+
+    add_shader!(main);
+    add_shader!(cube);
 
     let mut engine = Engine {
         camera: Camera::perspective(
@@ -114,6 +95,8 @@ pub extern fn init() -> *mut Engine {
     Box::into_raw(Box::new(engine))
 }
 
+
+
 #[no_mangle]
 pub extern fn render(ptr: *mut Engine, t: f32) -> *const f32 {
     let engine = unsafe {
@@ -124,10 +107,9 @@ pub extern fn render(ptr: *mut Engine, t: f32) -> *const f32 {
     engine.buffer.reset();
 
     let view_projection_matrix = engine.camera.view_projection_matrix();
-    // engine.buffer.add_matrix(&view_projection_matrix);
 
     for obj in engine.objects.iter_mut() {
-        // console_print(format!("id {}", obj.id).as_str());
+        // utils::console_log(format!("id {}", obj.id).as_str());
         engine.buffer.add_f32(obj.id);
         engine.buffer.add_f32(16.0);
         engine.buffer.add_f32(0.0);

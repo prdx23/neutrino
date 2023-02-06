@@ -106,18 +106,6 @@ let data3dCubeColor = [
     140, 170, 80,
 ]
 
-export let shaders = {
-    main: {
-        vertex: document.getElementById('vertex-shader').textContent,
-        fragment: document.getElementById('fragment-shader').textContent,
-    },
-    cube: {
-        vertex: document.getElementById('vertex-shader').textContent,
-        fragment: document.getElementById('fragment-shader').textContent,
-    },
-}
-
-
 export let buffers = {
     cubeVertices: {
         data: new Float32Array(data3dCube),

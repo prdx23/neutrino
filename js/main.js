@@ -1,4 +1,4 @@
-import { shaders, buffers } from './data.js'
+import { buffers } from './data.js'
 import { Shader, Buffer, Object3d } from './webgl.js'
 
 
@@ -11,33 +11,45 @@ let t = 0
 let BUFFER_SIZE
 
 
+let shaders = {}
 let objects = []
 
 
 const wasmImports = {
     imports: {
 
-        console_log: (ptr, len) => {
-            const data = new Uint8Array(
-                wasm.instance.exports.memory.buffer, ptr, len
-            )
+        console_log_raw: (ptr, len) => {
+            const data = new Uint8Array(wasm.memory.buffer, ptr, len)
             console.log(textDecoder.decode(data))
         },
 
-        console_error: (ptr, len) => {
-            const data = new Uint8Array(
-                wasm.instance.exports.memory.buffer, ptr, len
-            )
+        console_error_raw: (ptr, len) => {
+            const data = new Uint8Array(wasm.memory.buffer, ptr, len)
             let error = new Error()
             console.error(
                 textDecoder.decode(data) + '\n\n' + error.stack
             )
         },
 
+        add_shader: (
+            name_ptr, name_len, vert_ptr, vert_len, frag_ptr, frag_len
+        ) => {
+
+            let data
+            data = new Uint8Array(wasm.memory.buffer, name_ptr, name_len)
+            let name = textDecoder.decode(data)
+
+            data = new Uint8Array(wasm.memory.buffer, vert_ptr, vert_len)
+            let vert = textDecoder.decode(data)
+
+            data = new Uint8Array(wasm.memory.buffer, frag_ptr, frag_len)
+            let frag = textDecoder.decode(data)
+
+            shaders[name] = new Shader(vert, frag)
+        },
+
         add_object: (id, ptr, len) => {
-            const data = new Uint8Array(
-                wasm.instance.exports.memory.buffer, ptr, len
-            )
+            const data = new Uint8Array(wasm.memory.buffer, ptr, len)
             let meta = JSON.parse(textDecoder.decode(data))
             objects[id] = new Object3d(
                 meta.shader, meta.count, meta.attributes, meta.uniforms
@@ -53,6 +65,7 @@ async function load() {
     let file = 'target/wasm32-unknown-unknown/debug/neutrino_demo.wasm'
     // let file = 'target/wasm32-unknown-unknown/release/neutrino_demo.wasm'
     wasm = await WebAssembly.instantiateStreaming(fetch(file), wasmImports)
+    wasm.memory = wasm.instance.exports.memory
     console.log(wasm)
 
     BUFFER_SIZE = new Uint32Array(
@@ -79,7 +92,6 @@ function init() {
     }
 
     for( let [name, shader] of Object.entries(shaders) ) {
-        shaders[name] = new Shader(shader.vertex, shader.fragment)
         shaders[name].compile(gl)
     }
 
@@ -105,18 +117,14 @@ function init() {
         // gl.canvas.clientWidth, gl.canvas.clientHeight,
         let bufferptr = wasm.instance.exports.render(ptr, t)
         const buffer = new Float32Array(
-            wasm.instance.exports.memory.buffer, bufferptr, BUFFER_SIZE
+            wasm.memory.buffer, bufferptr, BUFFER_SIZE
         )
         // console.log(buffer)
 
         let b = 0
         let bufferLen = buffer[b++]
 
-        // let viewProjectionMatrix = buffer.slice(b, b + 16)
-        // b += 16
-
         let uniformUpdates = {}
-
         while( b < bufferLen ) {
             let id = buffer[b++]
             let len = buffer[b++]
