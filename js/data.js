@@ -1,4 +1,4 @@
-import { m4 } from './math.js'
+// import { m4 } from './math.js'
 
 let data3dCube = [
     // front
@@ -136,84 +136,6 @@ export let buffers = {
     },
 }
 
-
-export let objects = {
-
-    cube1: {
-        shader: 'main',
-        count: 6 * 6,
-        attributes: {
-            'a_position': 'cubeVertices',
-            'a_color': 'cubeColors',
-        },
-        uniformBlocks: {
-            'objectData': ['u_matrix'],
-        },
-        uniforms: {
-            'u_matrix': {
-                update: (viewProjectionMatrix, worldMatrix) => {
-                    let matrix = m4.identity()
-                    matrix = m4.multiply(matrix, viewProjectionMatrix)
-                    matrix = m4.scale(matrix, 50, 50, 50)
-                    matrix = m4.multiply(matrix, worldMatrix)
-                    return matrix
-                },
-            },
-        },
-        id: 1,
-    },
-
-    cube2: {
-        shader: 'main',
-        count: 6 * 6,
-        attributes: {
-            'a_position': 'cubeVertices',
-            'a_color': 'cubeColors',
-        },
-
-        uniformBlocks: {
-            'objectData': ['u_matrix'],
-        },
-        uniforms: {
-            'u_matrix': {
-                update: (viewProjectionMatrix, worldMatrix) => {
-                    let matrix = m4.identity()
-                    matrix = m4.multiply(matrix, viewProjectionMatrix)
-                    matrix = m4.translate(matrix, 250, 0, 0)
-                    matrix = m4.scale(matrix, 50, 50, 50)
-                    matrix = m4.multiply(matrix, worldMatrix)
-                    return matrix
-                },
-            },
-        },
-        id: 2,
-    },
-
-    cube3: {
-        shader: 'cube',
-        count: 6 * 6,
-        attributes: {
-            'a_position': 'cubeVertices',
-            'a_color': 'cubeColors',
-        },
-        uniformBlocks: {
-            'objectData': ['u_matrix'],
-        },
-        uniforms: {
-            'u_matrix': {
-                update: (viewProjectionMatrix, worldMatrix) => {
-                    let matrix = m4.identity()
-                    matrix = m4.multiply(matrix, viewProjectionMatrix)
-                    matrix = m4.translate(matrix, -250, 0, 0)
-                    matrix = m4.scale(matrix, 50, 50, 50)
-                    matrix = m4.multiply(matrix, worldMatrix)
-                    return matrix
-                },
-            },
-        },
-        id: 3,
-    },
-}
 
 let data3dF = [
     // left column front

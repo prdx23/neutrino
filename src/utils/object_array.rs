@@ -1,5 +1,6 @@
 use std::{iter, slice};
-use crate::game::Object3d;
+use crate::engine::Object3d;
+use crate::math::Vec3;
 
 
 const OBJ_ARRAY_SIZE: usize = 20;
@@ -20,9 +21,22 @@ impl ObjectArray {
         }
     }
 
-    pub fn add_object(&mut self, obj: Object3d) {
-        self.objects[self.current] = obj;
+    pub fn add_object(
+        &mut self, position: Vec3, scale: Vec3, rotation: Vec3, meta: &str
+    ) -> usize {
+
+        let id = self.current.clone();
+
+        self.objects[self.current] = Object3d {
+            id: id as f32, position, scale, rotation,
+        };
+
+        unsafe {
+            crate::add_object(id, meta.as_ptr(), meta.len());
+        }
+
         self.current += 1;
+        id
     }
 
     pub fn iter(&self) -> iter::Take<slice::Iter<'_, Object3d>> {

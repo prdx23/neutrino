@@ -1,5 +1,4 @@
-import { m4 } from './math.js'
-import { shaders, buffers, objects } from './data.js'
+import { shaders, buffers } from './data.js'
 import { Shader, Buffer, Object3d } from './webgl.js'
 
 
@@ -8,47 +7,66 @@ const height = 800
 
 const textDecoder = new TextDecoder()
 let wasm
+let t = 0
 let BUFFER_SIZE
 
-async function run() {
 
-    const importObject = {
-        imports: {
-            console_log: (ptr, len) => {
-                const data = new Uint8Array(
-                    wasm.instance.exports.memory.buffer, ptr, len
-                )
-                console.log(textDecoder.decode(data))
-            },
-            console_error: (ptr, len) => {
-                const data = new Uint8Array(
-                    wasm.instance.exports.memory.buffer, ptr, len
-                )
-                let error = new Error()
-                console.error(
-                    textDecoder.decode(data) + '\n\n' + error.stack
-                )
-            }
+let objects = []
+
+
+const wasmImports = {
+    imports: {
+
+        console_log: (ptr, len) => {
+            const data = new Uint8Array(
+                wasm.instance.exports.memory.buffer, ptr, len
+            )
+            console.log(textDecoder.decode(data))
         },
-    }
+
+        console_error: (ptr, len) => {
+            const data = new Uint8Array(
+                wasm.instance.exports.memory.buffer, ptr, len
+            )
+            let error = new Error()
+            console.error(
+                textDecoder.decode(data) + '\n\n' + error.stack
+            )
+        },
+
+        add_object: (id, ptr, len) => {
+            const data = new Uint8Array(
+                wasm.instance.exports.memory.buffer, ptr, len
+            )
+            let meta = JSON.parse(textDecoder.decode(data))
+            objects[id] = new Object3d(
+                meta.shader, meta.count, meta.attributes, meta.uniforms
+            )
+        },
+
+    },
+}
 
 
-    // let file = 'target/wasm32-unknown-unknown/debug/neutrino_demo.wasm'
-    let file = 'target/wasm32-unknown-unknown/release/neutrino_demo.wasm'
-    wasm = await WebAssembly.instantiateStreaming(fetch(file), importObject)
+
+async function load() {
+    let file = 'target/wasm32-unknown-unknown/debug/neutrino_demo.wasm'
+    // let file = 'target/wasm32-unknown-unknown/release/neutrino_demo.wasm'
+    wasm = await WebAssembly.instantiateStreaming(fetch(file), wasmImports)
     console.log(wasm)
+
     BUFFER_SIZE = new Uint32Array(
         WebAssembly.Module.customSections(wasm.module, 'BUFFER_SIZE'
     )[0])[0]
+
     init()
 }
-run()
+load()
 
-let t = 0
 
 
 function init() {
-    let gameptr = wasm.instance.exports.init()
+    let ptr = wasm.instance.exports.init()
 
     const canvas = document.getElementById('canvas')
     canvas.width = width
@@ -70,10 +88,9 @@ function init() {
         buffers[name].load(gl)
     }
 
-    for( let [name, object] of Object.entries(objects) ) {
-        objects[name] = new Object3d(...Object.values(object))
-        objects[name].load(gl, shaders, buffers)
-        shaders[object.shader].objects.push(objects[name])
+    for( let [id, object] of objects.entries() ) {
+        object.load(gl, shaders, buffers)
+        shaders[object.shader].objects.push(id)
     }
 
     gl.enable(gl.CULL_FACE)
@@ -86,7 +103,7 @@ function init() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
         // gl.canvas.clientWidth, gl.canvas.clientHeight,
-        let bufferptr = wasm.instance.exports.render(gameptr, t)
+        let bufferptr = wasm.instance.exports.render(ptr, t)
         const buffer = new Float32Array(
             wasm.instance.exports.memory.buffer, bufferptr, BUFFER_SIZE
         )
@@ -98,36 +115,46 @@ function init() {
         // let viewProjectionMatrix = buffer.slice(b, b + 16)
         // b += 16
 
-        let data = {}
+        let uniformUpdates = {}
 
-        let id, len, ublock, uname
         while( b < bufferLen ) {
-            id = buffer[b++]
-            data[id] = {
-                len: buffer[b++],
+            let id = buffer[b++]
+            let len = buffer[b++]
+
+            if( !(id in uniformUpdates) ) {
+                uniformUpdates[id] = []
+            }
+
+            uniformUpdates[id].push({
                 ublock: buffer[b++],
                 uname: buffer[b++],
-            }
-            data[id].data = buffer.slice(b, b + data[id].len)
-            b += data[id].len
+                data: buffer.slice(b, b + len)
+            })
+            b += len
         }
+        // console.log(uniformUpdates)
 
 
         let i = 0
         for( let shader of Object.values(shaders) ) {
             gl.useProgram(shader.program)
 
-            for( let object of Object.values(shader.objects) ) {
-                i += 1
+            for( let objectID of shader.objects ) {
+                let object = objects[objectID]
                 gl.bindVertexArray(object.vao)
 
-                let matrix = data[i].data
-                object.uniformBlocks['objectData'].update(
-                    gl, shader.program, 'u_matrix', matrix
-                )
+                for( let uniformUpdate of uniformUpdates[objectID] ) {
+                    object.updateUniform(
+                        gl, shader.program,
+                        uniformUpdate.ublock,
+                        uniformUpdate.uname,
+                        uniformUpdate.data,
+                    )
+                }
 
                 gl.drawArrays(gl.TRIANGLES, 0, object.count)
                 gl.bindVertexArray(null)
+                i += 1
             }
 
         }

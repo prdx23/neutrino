@@ -9,7 +9,7 @@ pub use camera::Camera;
 use crate::utils::MemoryBuffer;
 use crate::utils::ObjectArray;
 
-pub struct Game {
+pub struct Engine {
     pub objects: ObjectArray,
     pub buffer: MemoryBuffer,
     pub camera: Camera,

@@ -1,11 +1,11 @@
 use std::panic;
 
 
-mod game;
+mod engine;
 mod math;
 mod utils;
 
-use crate::game::{Game, Object3d, Camera};
+use crate::engine::{Engine, Camera};
 use crate::math::{Vec3, Matrix4};
 use crate::utils::{MemoryBuffer, ObjectArray};
 
@@ -14,6 +14,8 @@ use crate::utils::{MemoryBuffer, ObjectArray};
 extern {
     fn console_log(x: *const u8, l: usize);
     fn console_error(x: *const u8, l: usize);
+
+    fn add_object(id: usize, ptr: *const u8, len: usize);
 }
 
 fn set_panic_hook() {
@@ -47,9 +49,11 @@ fn console_print(text: &str) {
 
 
 #[no_mangle]
-pub extern fn init() -> *mut Game {
+pub extern fn init() -> *mut Engine {
+
     set_panic_hook();
-    let mut game = Game {
+
+    let mut engine = Engine {
         camera: Camera::perspective(
             Vec3::new(0.0, 300.0, 1800.0),
             30.0, 1.0, 1.0, 2500.0
@@ -58,51 +62,81 @@ pub extern fn init() -> *mut Game {
         objects: ObjectArray::empty(),
     };
 
-    game.objects.add_object(Object3d {
-        id: 1.0,
-        position: Vec3::zero(),
-        scale: Vec3::new(50.0, 50.0, 50.0),
-        rotation: Vec3::zero(),
-    });
-    game.objects.add_object(Object3d {
-        id: 2.0,
-        position: Vec3::new(250.0, 0.0, 0.0),
-        scale: Vec3::new(50.0, 50.0, 50.0),
-        rotation: Vec3::zero(),
-    });
-    game.objects.add_object(Object3d {
-        id: 3.0,
-        position: Vec3::new(-250.0, 0.0, 0.0),
-        scale: Vec3::new(50.0, 50.0, 50.0),
-        rotation: Vec3::zero(),
-    });
+    engine.objects.add_object(
+        Vec3::zero(),
+        Vec3::new(50.0, 50.0, 50.0),
+        Vec3::zero(),
+        r#"{
+            "shader": "main",
+            "count": 36,
+            "attributes": {
+                "a_position": "cubeVertices",
+                "a_color": "cubeColors"
+            },
+            "uniforms": {
+                "objectData": ["u_matrix"]
+            }
+        }"#,
+    );
+    engine.objects.add_object(
+        Vec3::new(250.0, 0.0, 0.0),
+        Vec3::new(50.0, 50.0, 50.0),
+        Vec3::zero(),
+        r#"{
+            "shader": "main",
+            "count": 36,
+            "attributes": {
+                "a_position": "cubeVertices",
+                "a_color": "cubeColors"
+            },
+            "uniforms": {
+                "objectData": ["u_matrix"]
+            }
+        }"#,
+    );
+    engine.objects.add_object(
+        Vec3::new(-250.0, 0.0, 0.0),
+        Vec3::new(50.0, 50.0, 50.0),
+        Vec3::zero(),
+        r#"{
+            "shader": "cube",
+            "count": 36,
+            "attributes": {
+                "a_position": "cubeVertices",
+                "a_color": "cubeColors"
+            },
+            "uniforms": {
+                "objectData": ["u_matrix"]
+            }
+        }"#,
+    );
 
-    Box::into_raw(Box::new(game))
+    Box::into_raw(Box::new(engine))
 }
 
 #[no_mangle]
-pub extern fn render(ptr: *mut Game, t: f32) -> *const f32 {
-    let game = unsafe {
+pub extern fn render(ptr: *mut Engine, t: f32) -> *const f32 {
+    let engine = unsafe {
         assert!(!ptr.is_null());
         &mut *ptr
     };
 
-    game.buffer.reset();
+    engine.buffer.reset();
 
-    let view_projection_matrix = game.camera.view_projection_matrix();
-    // game.buffer.add_matrix(&view_projection_matrix);
+    let view_projection_matrix = engine.camera.view_projection_matrix();
+    // engine.buffer.add_matrix(&view_projection_matrix);
 
-    for x in game.objects.iter_mut() {
-        // console_print(format!("id {}", x.id).as_str());
-        game.buffer.add_f32(x.id);
-        game.buffer.add_f32(16.0);
-        game.buffer.add_f32(0.0);
-        game.buffer.add_f32(0.0);
+    for obj in engine.objects.iter_mut() {
+        // console_print(format!("id {}", obj.id).as_str());
+        engine.buffer.add_f32(obj.id);
+        engine.buffer.add_f32(16.0);
+        engine.buffer.add_f32(0.0);
+        engine.buffer.add_f32(0.0);
 
-        x.rotation.x = -t * 0.5 * x.id;
-        x.rotation.y = -t * 0.5 * x.id;
-        game.buffer.add_matrix(&x.get_matrix(view_projection_matrix));
+        obj.rotation.x = -t * 0.5 * (obj.id + 1.0);
+        obj.rotation.y = -t * 0.5 * (obj.id + 1.0);
+        engine.buffer.add_matrix(&obj.get_matrix(view_projection_matrix));
     }
 
-    game.buffer.as_ptr()
+    engine.buffer.as_ptr()
 }
