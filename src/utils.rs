@@ -62,3 +62,38 @@ macro_rules! add_shader {
         }
     }
 }
+
+
+#[macro_export]
+macro_rules! add_buffer {
+    (float, $name:expr, $size:expr, $normalize:expr) => {
+        {
+            let name = stringify!($name);
+            let data = include_str!(
+                concat!("data/", stringify!($name), ".json")
+            );
+            unsafe {
+                crate::add_buffer_float(
+                    name.as_ptr(), name.len(),
+                    data.as_ptr(), data.len(),
+                    $size, $normalize
+                );
+            }
+        }
+    };
+    (bytes, $name:expr, $size:expr, $normalize:expr) => {
+        {
+            let name = stringify!($name);
+            let data = include_str!(
+                concat!("data/", stringify!($name), ".json")
+            );
+            unsafe {
+                crate::add_buffer_bytes(
+                    name.as_ptr(), name.len(),
+                    data.as_ptr(), data.len(),
+                    $size, $normalize
+                );
+            }
+        }
+    }
+}

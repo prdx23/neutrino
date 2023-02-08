@@ -21,6 +21,18 @@ extern {
         frag_ptr: *const u8, frag_len: usize,
     );
 
+    fn add_buffer_float(
+        name_ptr: *const u8, name_len: usize,
+        data_ptr: *const u8, data_len: usize,
+        size: f32, normalize: bool
+    );
+
+    fn add_buffer_bytes(
+        name_ptr: *const u8, name_len: usize,
+        data_ptr: *const u8, data_len: usize,
+        size: f32, normalize: bool
+    );
+
     fn add_object(id: usize, ptr: *const u8, len: usize);
 
 }
@@ -33,6 +45,9 @@ pub extern fn init() -> *mut Engine {
 
     add_shader!(main);
     add_shader!(cube);
+
+    add_buffer!(float, cube_vertices, 3.0, false);
+    add_buffer!(bytes, cube_vertex_colors, 3.0, true);
 
     let mut engine = Engine {
         camera: Camera::perspective(
@@ -51,8 +66,8 @@ pub extern fn init() -> *mut Engine {
             "shader": "main",
             "count": 36,
             "attributes": {
-                "a_position": "cubeVertices",
-                "a_color": "cubeColors"
+                "a_position": "cube_vertices",
+                "a_color": "cube_vertex_colors"
             },
             "uniforms": {
                 "objectData": ["u_matrix"]
@@ -67,8 +82,8 @@ pub extern fn init() -> *mut Engine {
             "shader": "main",
             "count": 36,
             "attributes": {
-                "a_position": "cubeVertices",
-                "a_color": "cubeColors"
+                "a_position": "cube_vertices",
+                "a_color": "cube_vertex_colors"
             },
             "uniforms": {
                 "objectData": ["u_matrix"]
@@ -83,8 +98,8 @@ pub extern fn init() -> *mut Engine {
             "shader": "cube",
             "count": 36,
             "attributes": {
-                "a_position": "cubeVertices",
-                "a_color": "cubeColors"
+                "a_position": "cube_vertices",
+                "a_color": "cube_vertex_colors"
             },
             "uniforms": {
                 "objectData": ["u_matrix"]

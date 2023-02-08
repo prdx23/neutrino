@@ -1,4 +1,4 @@
-import { buffers } from './data.js'
+// import { buffers } from './data.js'
 import { Shader, Buffer, Object3d } from './webgl.js'
 
 
@@ -12,6 +12,7 @@ let BUFFER_SIZE
 
 
 let shaders = {}
+let buffers = {}
 let objects = []
 
 
@@ -46,6 +47,41 @@ const wasmImports = {
             let frag = textDecoder.decode(data)
 
             shaders[name] = new Shader(vert, frag)
+        },
+
+
+        add_buffer_float: (
+            name_ptr, name_len, data_ptr, data_len, size, normalize
+        ) => {
+            let data
+            data = new Uint8Array(wasm.memory.buffer, name_ptr, name_len)
+            let name = textDecoder.decode(data)
+
+            data = new Uint8Array(wasm.memory.buffer, data_ptr, data_len)
+            buffers[name] = new Buffer(
+                new Float32Array(JSON.parse(textDecoder.decode(data))),
+                'STATIC_DRAW',
+                size,
+                'FLOAT',
+                normalize == 0 ? false : true,
+            )
+        },
+
+        add_buffer_bytes: (
+            name_ptr, name_len, data_ptr, data_len, size, normalize
+        ) => {
+            let data
+            data = new Uint8Array(wasm.memory.buffer, name_ptr, name_len)
+            let name = textDecoder.decode(data)
+
+            data = new Uint8Array(wasm.memory.buffer, data_ptr, data_len)
+            buffers[name] = new Buffer(
+                new Uint8Array(JSON.parse(textDecoder.decode(data))),
+                'STATIC_DRAW',
+                size,
+                'UNSIGNED_BYTE',
+                normalize == 0 ? false : true,
+            )
         },
 
         add_object: (id, ptr, len) => {
@@ -96,7 +132,7 @@ function init() {
     }
 
     for( let [name, bufferData] of Object.entries(buffers) ) {
-        buffers[name] = new Buffer(...Object.values(bufferData))
+        // buffers[name] = new Buffer(...Object.values(bufferData))
         buffers[name].load(gl)
     }
 
