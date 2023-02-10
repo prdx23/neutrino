@@ -3,9 +3,9 @@ mod engine;
 mod math;
 mod utils;
 
-use crate::engine::{Engine, Camera};
+use crate::engine::{Engine, Camera, Object3d};
 use crate::math::{Vec3, Matrix4};
-use crate::utils::{MemoryBuffer, ObjectArray};
+use crate::utils::{MemoryBuffer, Arena};
 
 
 #[link(wasm_import_module = "imports")]
@@ -51,17 +51,19 @@ pub extern fn init() -> *mut Engine {
 
     let mut engine = Engine {
         camera: Camera::perspective(
-            Vec3::new(0.0, 300.0, 1800.0),
-            30.0, 1.0, 1.0, 2500.0
+            Vec3::new(0.0, 1000.0, 1000.0),
+            30.0, 1.0, 500.0, 8000.0
         ),
         buffer: MemoryBuffer::empty(),
-        objects: ObjectArray::empty(),
+        objects: Arena::empty(),
     };
 
-    engine.objects.add_object(
-        Vec3::zero(),
-        Vec3::new(50.0, 50.0, 50.0),
-        Vec3::zero(),
+    engine.add_object(
+        Object3d {
+            position: Vec3::zero(),
+            scale: Vec3::new(50.0, 50.0, 50.0),
+            rotation: Vec3::zero(),
+        },
         r#"{
             "shader": "main",
             "count": 36,
@@ -74,10 +76,12 @@ pub extern fn init() -> *mut Engine {
             }
         }"#,
     );
-    engine.objects.add_object(
-        Vec3::new(250.0, 0.0, 0.0),
-        Vec3::new(50.0, 50.0, 50.0),
-        Vec3::zero(),
+    engine.add_object(
+        Object3d {
+            position: Vec3::new(250.0, 0.0, 0.0),
+            scale: Vec3::new(50.0, 50.0, 50.0),
+            rotation: Vec3::zero(),
+        },
         r#"{
             "shader": "main",
             "count": 36,
@@ -90,10 +94,12 @@ pub extern fn init() -> *mut Engine {
             }
         }"#,
     );
-    engine.objects.add_object(
-        Vec3::new(-250.0, 0.0, 0.0),
-        Vec3::new(50.0, 50.0, 50.0),
-        Vec3::zero(),
+    engine.add_object(
+        Object3d {
+            position: Vec3::new(-250.0, 0.0, 0.0),
+            scale: Vec3::new(50.0, 50.0, 50.0),
+            rotation: Vec3::zero(),
+        },
         r#"{
             "shader": "cube",
             "count": 36,
@@ -113,25 +119,43 @@ pub extern fn init() -> *mut Engine {
 
 
 #[no_mangle]
-pub extern fn render(ptr: *mut Engine, t: f32) -> *const f32 {
+pub extern fn render(ptr: *mut Engine, t: f32, keys: u8) -> *const f32 {
     let engine = unsafe {
         assert!(!ptr.is_null());
         &mut *ptr
     };
 
+    if keys & (1 << 0) > 0 {
+        engine.objects.get_mut(0).position.z -= 5.0;
+    }
+
+    if keys & (1 << 1) > 0 {
+        engine.objects.get_mut(0).position.x -= 5.0;
+    }
+
+    if keys & (1 << 2) > 0 {
+        engine.objects.get_mut(0).position.z += 5.0;
+    }
+
+    if keys & (1 << 3) > 0 {
+        engine.objects.get_mut(0).position.x += 5.0;
+    }
+
     engine.buffer.reset();
+
+    engine.camera.look_at(engine.objects.get(0).position);
 
     let view_projection_matrix = engine.camera.view_projection_matrix();
 
-    for obj in engine.objects.iter_mut() {
+    for (i, obj) in engine.objects.iter_mut().enumerate() {
         // utils::console_log(format!("id {}", obj.id).as_str());
-        engine.buffer.add_f32(obj.id);
+        engine.buffer.add_f32(i as f32);
         engine.buffer.add_f32(16.0);
         engine.buffer.add_f32(0.0);
         engine.buffer.add_f32(0.0);
 
-        obj.rotation.x = -t * 0.5 * (obj.id + 1.0);
-        obj.rotation.y = -t * 0.5 * (obj.id + 1.0);
+        obj.rotation.x = -t * 0.5 * (i as f32 + 1.0);
+        obj.rotation.y = -t * 0.5 * (i as f32 + 1.0);
         engine.buffer.add_matrix(&obj.get_matrix(view_projection_matrix));
     }
 

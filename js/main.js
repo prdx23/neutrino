@@ -8,6 +8,7 @@ const height = 800
 const textDecoder = new TextDecoder()
 let wasm
 let t = 0
+let keys = 0
 let BUFFER_SIZE
 
 
@@ -151,7 +152,7 @@ function init() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
         // gl.canvas.clientWidth, gl.canvas.clientHeight,
-        let bufferptr = wasm.instance.exports.render(ptr, t)
+        let bufferptr = wasm.instance.exports.render(ptr, t, keys)
         const buffer = new Float32Array(
             wasm.memory.buffer, bufferptr, BUFFER_SIZE
         )
@@ -209,3 +210,22 @@ function init() {
     render()
 
 }
+
+const keyShifts = {
+    KeyW: 0, KeyA: 1, KeyS: 2, KeyD: 3,
+}
+
+window.addEventListener("keydown", (event) => {
+    if (event.isComposing || event.keyCode === 229 || event.repeat) { return }
+    if( Object.keys(keyShifts).includes(event.code) ) {
+        keys |= 0b1 << keyShifts[event.code]
+    }
+    // console.log('key down!', event.code, keys.toString(2), keys)
+})
+
+window.addEventListener("keyup", (event) => {
+    if( Object.keys(keyShifts).includes(event.code) ) {
+        keys &= ~(0b1 << keyShifts[event.code])
+    }
+    // console.log('key up!', event.code, keys.toString(2), keys)
+})

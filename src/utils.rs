@@ -2,8 +2,8 @@
 pub mod memory_buffer;
 pub use memory_buffer::MemoryBuffer;
 
-pub mod object_array;
-pub use object_array::ObjectArray;
+pub mod arena;
+pub use arena::Arena;
 
 
 pub fn set_panic_hook() {
