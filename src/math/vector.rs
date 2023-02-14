@@ -23,6 +23,12 @@ impl Vec3 {
         Vec3 { x: 0.0, y: 0.0, z: 0.0 }
     }
 
+    pub fn set(&mut self, x: f32, y: f32, z: f32) {
+        self.x = x;
+        self.y = y;
+        self.z = z;
+    }
+
     // pub fn inf() -> Vec3 {
     //     Vec3::new(f32::INFINITY, f32::INFINITY, f32::INFINITY)
     // }
@@ -56,62 +62,6 @@ impl Vec3 {
     pub fn unit(&self) -> Self {
         *self / self.len()
     }
-
-    // pub fn near_zero(&self) -> bool {
-    //     let e = 1e-8;
-    //     self.x.abs() < e && self.y.abs() < e && self.z.abs() < e
-    // }
-
-    // --------------------------------------------------------
-
-    // pub fn reflect(vector: Vec3, normal: Vec3) -> Vec3 {
-    //     vector - 2.0 * vector.dot(normal) * normal
-    // }
-
-    // pub fn refract(uv: Vec3, n: Vec3, etai_over_etat: f32) -> Vec3 {
-    //     let cos_theta = (-uv).dot(n).min(1.0);
-    //     let r_perp = etai_over_etat * (uv + cos_theta * n);
-    //     let r_parallel = -(1.0 - r_perp.sq_len()).abs().sqrt() * n;
-
-    //     r_perp + r_parallel
-    // }
-
-    // --------------------------------------------------------
-
-    // pub fn random(min: f32, max: f32) -> Vec3 {
-    //     let mut rng = rand::thread_rng();
-    //     Vec3 {
-    //         x: rng.gen_range(min..max),
-    //         y: rng.gen_range(min..max),
-    //         z: rng.gen_range(min..max),
-    //     }
-    // }
-
-    // pub fn random_in_unit_sphere() -> Vec3 {
-    //     loop {
-    //         let point = Vec3::random(-1.0, 1.0);
-    //         if point.sq_len() >= 1.0 { continue; }
-    //         return point
-    //     }
-    // }
-
-    // pub fn random_in_unit_disc() -> Vec3 {
-    //     loop {
-    //         let rnd = Vec3::random(-1.0, 1.0);
-    //         let point = Vec3::new(rnd.x, rnd.y, 0.0);
-    //         if point.sq_len() >= 1.0 { continue; }
-    //         return point
-    //     }
-    // }
-
-    // pub fn random_in_hemisphere(normal: Vec3) -> Vec3 {
-    //     let in_unit_sphere = Vec3::random_in_unit_sphere();
-    //     if in_unit_sphere.dot(normal) > 0.0 {
-    //         return in_unit_sphere
-    //     } else {
-    //         return -in_unit_sphere
-    //     }
-    // }
 }
 
 impl Add for Vec3 {
@@ -271,6 +221,15 @@ mod tests {
         assert_eq!(vector.x, 0.0);
         assert_eq!(vector.y, 0.0);
         assert_eq!(vector.z, 0.0);
+    }
+
+    #[test]
+    fn vector_set() {
+        let vector = Vec3::zero();
+        vector.set(1.0, 2.0, 3.0);
+        assert_eq!(vector.x, 1.0);
+        assert_eq!(vector.y, 2.0);
+        assert_eq!(vector.z, 3.0);
     }
 
     #[test]

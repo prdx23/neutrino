@@ -1,80 +1,79 @@
+use core::cell::Cell;
 
 use crate::math::{ Vec3, Matrix4 };
 use crate::utils::Arena;
-use crate::engine::NOBJ;
 
 
-const NN: usize = 10;
 
-
-#[derive(Clone, Copy, Debug)]
-pub struct Node {
-    pub children: Arena<usize, NN>,
-    pub matrix: Matrix4,
-    pub world_matrix: Matrix4,
+pub struct Node<const N: usize> {
+    pub children: Arena<usize, N>,
+    pub position: Vec3,
+    pub scale: Vec3,
+    pub rotation: Vec3,
+    matrix: Cell<Matrix4>,
 }
 
 
-impl Default for Node {
+impl<const N: usize> Default for Node<N> {
     fn default() -> Self {
         Self {
             children: Arena::empty(),
-            matrix: Matrix4::identity(),
-            world_matrix: Matrix4::identity(),
+            position: Vec3::zero(),
+            scale: Vec3::new(1.0, 1.0, 1.0),
+            rotation: Vec3::zero(),
+            matrix: Cell::new(Matrix4::identity()),
         }
     }
 }
 
 
-impl Node {
+impl<const N: usize> Node<N> {
 
     pub fn new() -> Self {
         Default::default()
     }
 
+    pub fn matrix(&self) -> Matrix4 {
+        self.matrix.get()
+    }
+
 }
 
 
+pub type Tree<const M: usize, const N: usize> = Arena<Node<N>, M>;
 
 
-#[derive(Debug)]
-pub struct Tree<const N: usize> {
-    nodes: Arena<Node, N>,
-}
+impl<const M: usize, const N: usize> Tree<M, N> {
 
+    pub fn root(&mut self) -> usize {
+        if self.len() == 0 { self.add(Node::new()); }
+        0
+    }
 
-impl<const N: usize> Tree<N> {
+    pub fn add_object(&mut self, parent: usize, meta: Option<&str>) -> usize {
+        let id = self.add(Node::new());
 
-    pub fn empty() -> Tree<N> {
-        Tree {
-            nodes: Arena::empty()
+        if let Some(meta) = meta {
+            unsafe { crate::add_object(id, meta.as_ptr(), meta.len()); }
         }
-    }
 
-    pub fn new_root(&mut self) -> usize {
-        self.nodes.add(Node::new())
-    }
+        self[parent].children.add(id);
 
-    pub fn new_node(&mut self, parent: usize) -> usize {
-        let id = self.nodes.add(Node::new());
-        self.nodes.get_mut(parent).children.add(id);
         id
     }
 
-    // pub fn node(&self, node: usize) -> &Node {
-    //     self.nodes.get(node)
-    // }
-
-    pub fn node(&mut self, node: usize) -> &mut Node {
-        self.nodes.get_mut(node)
+    pub fn update_matrices(&self, world_matrix: Matrix4) {
+        self.update_world_matrix(0, world_matrix);
     }
 
-    pub fn update_world_matrix(&mut self, node: usize, mut world_matrix: Matrix4) {
-        let matrix = world_matrix * self.node(node).matrix;
-        // crate::utils::console_log(format!("update id {} {:?}", node, matrix).as_str());
-        // world_matrix *= self.node(node).matrix;
-        self.nodes.get_mut(node).world_matrix = matrix;
-        for id in self.nodes.get(node).children.clone().iter() {
+    fn update_world_matrix(&self, node: usize, mut matrix: Matrix4) {
+        matrix.translate(self[node].position);
+        matrix.rotate(self[node].rotation);
+        matrix.scale(self[node].scale);
+
+        self[node].matrix.replace(matrix);
+
+        for id in self[node].children.slice() {
             self.update_world_matrix(*id, matrix);
         }
     }

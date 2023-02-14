@@ -2,7 +2,7 @@ use std::ops::{ Mul, MulAssign };
 use crate::math::Vec3;
 
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Matrix4 {
     pub matrix: [[f32; 4]; 4],
 }
@@ -283,7 +283,7 @@ impl MulAssign for Matrix4 {
         for i in 0..4 {
             for j in 0..4 {
                 for k in 0..4 {
-                    res.matrix[i][j] += self.matrix[i][k] * other.matrix[k][j];
+                    res.matrix[i][j] += other.matrix[i][k] * self.matrix[k][j];
                 }
             }
         }

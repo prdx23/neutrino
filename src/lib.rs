@@ -3,10 +3,9 @@ mod engine;
 mod math;
 mod utils;
 
-use crate::engine::{Engine, Camera, Object3d};
+use crate::engine::{Engine, Camera, Tree};
 use crate::math::{Vec3, Matrix4};
-use crate::utils::{MemoryBuffer, Arena};
-use crate::engine::{Tree};
+use crate::utils::{MemoryBuffer};
 
 
 #[link(wasm_import_module = "imports")]
@@ -38,9 +37,6 @@ extern {
 
 }
 
-    pub fn temp(id: usize, meta: &str) {
-        unsafe { crate::add_object(id, meta.as_ptr(), meta.len()); }
-    }
 
 
 #[no_mangle]
@@ -54,14 +50,10 @@ pub extern fn init() -> *mut Engine {
     add_buffer!(float, cube_vertices, 3.0, false);
     add_buffer!(bytes, cube_vertex_colors, 3.0, true);
 
-    let mut tree = Tree::empty();
-    let scene = tree.new_root();
+    let mut scenegraph = Tree::empty();
+    let scene = scenegraph.root();
 
-    let cube1 = tree.new_node(scene);
-    tree.node(cube1).matrix.scale_x(50.0);
-    tree.node(cube1).matrix.scale_y(50.0);
-    tree.node(cube1).matrix.scale_z(50.0);
-    temp(cube1,
+    let cube1 = scenegraph.add_object(scene, Some(
         r#"{
             "shader": "main",
             "count": 36,
@@ -72,16 +64,12 @@ pub extern fn init() -> *mut Engine {
             "uniforms": {
                 "objectData": ["u_matrix"]
             }
-        }"#,
+        }"#),
     );
+    scenegraph[cube1].scale.set(50.0, 50.0, 50.0);
 
 
-    let cube2 = tree.new_node(scene);
-    tree.node(cube2).matrix.scale_x(50.0);
-    tree.node(cube2).matrix.scale_y(50.0);
-    tree.node(cube2).matrix.scale_z(50.0);
-    tree.node(cube2).matrix.translate_x(250.0);
-    temp(cube2,
+    let cube2 = scenegraph.add_object(scene, Some(
         r#"{
             "shader": "main",
             "count": 36,
@@ -92,15 +80,12 @@ pub extern fn init() -> *mut Engine {
             "uniforms": {
                 "objectData": ["u_matrix"]
             }
-        }"#,
+        }"#),
     );
+    scenegraph[cube2].scale.set(50.0, 50.0, 50.0);
+    scenegraph[cube2].position.x = 250.0;
 
-    let cube3 = tree.new_node(scene);
-    tree.node(cube3).matrix.scale_x(50.0);
-    tree.node(cube3).matrix.scale_y(50.0);
-    tree.node(cube3).matrix.scale_z(50.0);
-    tree.node(cube3).matrix.translate_x(-250.0);
-    temp(cube3,
+    let cube3 = scenegraph.add_object(scene, Some(
         r#"{
             "shader": "cube",
             "count": 36,
@@ -111,104 +96,19 @@ pub extern fn init() -> *mut Engine {
             "uniforms": {
                 "objectData": ["u_matrix"]
             }
-        }"#,
+        }"#),
     );
+    scenegraph[cube3].scale.set(50.0, 50.0, 50.0);
+    scenegraph[cube3].position.x = -250.0;
 
-    let mut engine = Engine {
+    let engine = Engine {
         camera: Camera::perspective(
             Vec3::new(0.0, 1000.0, 1000.0),
             30.0, 1.0, 500.0, 8000.0
         ),
         buffer: MemoryBuffer::empty(),
-        tree: tree,
+        scenegraph: scenegraph,
     };
-
-
-
-
-
-
-
-
-    // let mut tree: Arena<Node, NOBJ> = Arena::empty();
-
-    // let mut scene = Node::new();
-
-    // let mut cube1 = Node::new();
-    // cube1.matrix.scale(Vec3::new(50.0, 50.0, 50.0));
-
-    // let cube1id = tree.add(cube1);
-
-
-    // scene.children.add(cube1id);
-
-
-    // let sceneid = tree.add(scene);
-    // // tree.arena[scene].children.add(cube1);
-
-
-    // // utils::console_log(format!("tree {:?}", tree.arena).as_str());
-    // tree = scene.update_world_matrix(Matrix4::identity(), tree);
-    // utils::console_log(format!("tree {:?}", tree.arena).as_str());
-
-
-
-
-    // engine.add_object(
-    //     Object3d {
-    //         position: Vec3::zero(),
-    //         scale: Vec3::new(50.0, 50.0, 50.0),
-    //         rotation: Vec3::zero(),
-    //     },
-    //     r#"{
-    //         "shader": "main",
-    //         "count": 36,
-    //         "attributes": {
-    //             "a_position": "cube_vertices",
-    //             "a_color": "cube_vertex_colors"
-    //         },
-    //         "uniforms": {
-    //             "objectData": ["u_matrix"]
-    //         }
-    //     }"#,
-    // );
-    // engine.add_object(
-    //     Object3d {
-    //         position: Vec3::new(250.0, 0.0, 0.0),
-    //         scale: Vec3::new(50.0, 50.0, 50.0),
-    //         rotation: Vec3::zero(),
-    //     },
-    //     r#"{
-    //         "shader": "main",
-    //         "count": 36,
-    //         "attributes": {
-    //             "a_position": "cube_vertices",
-    //             "a_color": "cube_vertex_colors"
-    //         },
-    //         "uniforms": {
-    //             "objectData": ["u_matrix"]
-    //         }
-    //     }"#,
-    // );
-    // engine.add_object(
-    //     Object3d {
-    //         position: Vec3::new(-250.0, 0.0, 0.0),
-    //         scale: Vec3::new(50.0, 50.0, 50.0),
-    //         rotation: Vec3::zero(),
-    //     },
-    //     r#"{
-    //         "shader": "cube",
-    //         "count": 36,
-    //         "attributes": {
-    //             "a_position": "cube_vertices",
-    //             "a_color": "cube_vertex_colors"
-    //         },
-    //         "uniforms": {
-    //             "objectData": ["u_matrix"]
-    //         }
-    //     }"#,
-    // );
-
     Box::into_raw(Box::new(engine))
 }
 
@@ -220,90 +120,43 @@ pub extern fn render(ptr: *mut Engine, t: f32, keys: u8) -> *const f32 {
         assert!(!ptr.is_null());
         &mut *ptr
     };
-
-    // if keys & (1 << 0) > 0 {
-    //     engine.objects.get_mut(0).position.z -= 5.0;
-    // }
-
-    // if keys & (1 << 1) > 0 {
-    //     engine.objects.get_mut(0).position.x -= 5.0;
-    // }
-
-    // if keys & (1 << 2) > 0 {
-    //     engine.objects.get_mut(0).position.z += 5.0;
-    // }
-
-    // if keys & (1 << 3) > 0 {
-    //     engine.objects.get_mut(0).position.x += 5.0;
-    // }
-
     engine.buffer.reset();
 
-    // engine.camera.look_at(engine.objects.get(0).position);
 
-    let view_projection_matrix = engine.camera.view_projection_matrix();
-
-    engine.tree.node(0).matrix.translate_y((t / 10.0).sin() * 10.0);
-
-    // engine.tree.node(0).matrix.scale_x(0.5 * 1.0);
-
-    engine.tree.node(1).matrix.translate_x(0.0);
-    engine.tree.node(2).matrix.translate_x(-250.0);
-    engine.tree.node(3).matrix.translate_x(250.0);
-
-    engine.tree.node(1).matrix.rotate_x(0.5 * 1.0);
-    engine.tree.node(2).matrix.rotate_x(0.5 * 2.0);
-    engine.tree.node(3).matrix.rotate_x(0.5 * 3.0);
-
-    engine.tree.node(1).matrix.rotate_y(0.5 * 1.0);
-    engine.tree.node(2).matrix.rotate_y(0.5 * 2.0);
-    engine.tree.node(3).matrix.rotate_y(0.5 * 3.0);
-
-    engine.tree.node(1).matrix.translate_x(0.0);
-    engine.tree.node(2).matrix.translate_x(250.0);
-    engine.tree.node(3).matrix.translate_x(-250.0);
-
-    engine.tree.update_world_matrix(0, view_projection_matrix);
-
-    engine.buffer.add_f32(1.0);
-    engine.buffer.add_f32(16.0);
-    engine.buffer.add_f32(0.0);
-    engine.buffer.add_f32(0.0);
-    // let matrix = view_projection_matrix * engine.tree.node(1).matrix;
-    // engine.buffer.add_matrix(&matrix);
-    engine.buffer.add_matrix(&engine.tree.node(1).world_matrix);
+    if keys & (1 << 0) > 0 {
+        engine.scenegraph[1].position.z -= 5.0;
+    }
+    if keys & (1 << 1) > 0 {
+        engine.scenegraph[1].position.x -= 5.0;
+    }
+    if keys & (1 << 2) > 0 {
+        engine.scenegraph[1].position.z += 5.0;
+    }
+    if keys & (1 << 3) > 0 {
+        engine.scenegraph[1].position.x += 5.0;
+    }
+    engine.camera.look_at(engine.scenegraph[1].position);
 
 
-    engine.buffer.add_f32(2.0);
-    engine.buffer.add_f32(16.0);
-    engine.buffer.add_f32(0.0);
-    engine.buffer.add_f32(0.0);
-    // let matrix = view_projection_matrix * engine.tree.node(2).matrix;
-    // engine.buffer.add_matrix(&matrix);
-    engine.buffer.add_matrix(&engine.tree.node(2).world_matrix);
+    engine.scenegraph[0].position.y = (t / 100.0).sin() * 100.0;
 
+    for i in 1..=3 {
+        engine.scenegraph[i].rotation.x = -t * 0.5 * (i as f32 + 1.0);
+        engine.scenegraph[i].rotation.y = -t * 0.5 * (i as f32 + 1.0);
+    }
 
-    engine.buffer.add_f32(3.0);
-    engine.buffer.add_f32(16.0);
-    engine.buffer.add_f32(0.0);
-    engine.buffer.add_f32(0.0);
-    // let matrix = view_projection_matrix * engine.tree.node(3).matrix;
-    // engine.buffer.add_matrix(&matrix);
-    engine.buffer.add_matrix(&engine.tree.node(3).world_matrix);
+    engine.scenegraph.update_matrices(
+        engine.camera.view_projection_matrix()
+    );
 
-    // for (i, obj) in engine.objects.iter_mut().enumerate() {
-    //     // utils::console_log(format!("id {}", obj.id).as_str());
-    //     engine.buffer.add_f32(i as f32);
-    //     engine.buffer.add_f32(16.0);
-    //     engine.buffer.add_f32(0.0);
-    //     engine.buffer.add_f32(0.0);
-
-    //     obj.rotation.x = -t * 0.5 * (i as f32 + 1.0);
-    //     obj.rotation.y = -t * 0.5 * (i as f32 + 1.0);
-
-    //     let matrix = view_projection_matrix * obj.matrix();
-    //     engine.buffer.add_matrix(&matrix);
-    // }
+    for i in 1..=3 {
+        // utils::console_log(format!("id {}", i).as_str());
+        engine.buffer.add_f32(i as f32);
+        engine.buffer.add_f32(16.0);
+        engine.buffer.add_f32(0.0);
+        engine.buffer.add_f32(0.0);
+        engine.buffer.add_matrix(&engine.scenegraph[i].matrix());
+    }
 
     engine.buffer.as_ptr()
 }

@@ -14,7 +14,7 @@ let BUFFER_SIZE
 
 let shaders = {}
 let buffers = {}
-let objects = []
+let objects = {}
 
 
 const wasmImports = {
@@ -128,18 +128,15 @@ function init() {
         return
     }
 
-    for( let [name, shader] of Object.entries(shaders) ) {
-        shaders[name].compile(gl)
+    for( let shader of Object.values(shaders) ) {
+        shader.compile(gl)
     }
 
-    for( let [name, bufferData] of Object.entries(buffers) ) {
-        // buffers[name] = new Buffer(...Object.values(bufferData))
-        buffers[name].load(gl)
+    for( let buffer of Object.values(buffers) ) {
+        buffer.load(gl)
     }
 
-    console.log(objects)
-    for( let [id, object] of objects.entries() ) {
-        if( !object ) { continue }
+    for( let [id, object] of Object.entries(objects) ) {
         object.load(gl, shaders, buffers)
         shaders[object.shader].objects.push(id)
     }
@@ -188,7 +185,6 @@ function init() {
 
             for( let objectID of shader.objects ) {
                 let object = objects[objectID]
-                // console.log(object)
                 gl.bindVertexArray(object.vao)
 
                 for( let uniformUpdate of uniformUpdates[objectID] ) {
