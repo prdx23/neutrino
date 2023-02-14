@@ -137,7 +137,9 @@ function init() {
         buffers[name].load(gl)
     }
 
+    console.log(objects)
     for( let [id, object] of objects.entries() ) {
+        if( !object ) { continue }
         object.load(gl, shaders, buffers)
         shaders[object.shader].objects.push(id)
     }
@@ -186,6 +188,7 @@ function init() {
 
             for( let objectID of shader.objects ) {
                 let object = objects[objectID]
+                // console.log(object)
                 gl.bindVertexArray(object.vao)
 
                 for( let uniformUpdate of uniformUpdates[objectID] ) {

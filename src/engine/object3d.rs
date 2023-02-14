@@ -22,12 +22,12 @@ impl Default for Object3d {
 
 impl Object3d {
 
-    pub fn get_matrix(&self, view_projection_matrix: Matrix4) -> Matrix4 {
+    pub fn matrix(&self) -> Matrix4 {
         let mut matrix = Matrix4::identity();
         matrix.rotate(self.rotation);
         matrix.scale(self.scale);
         matrix.translate(self.position);
-        view_projection_matrix * matrix
+        matrix
     }
 
 }

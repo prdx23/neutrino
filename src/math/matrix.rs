@@ -2,7 +2,7 @@ use std::ops::{ Mul, MulAssign };
 use crate::math::Vec3;
 
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Matrix4 {
     pub matrix: [[f32; 4]; 4],
 }
