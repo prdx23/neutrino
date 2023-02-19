@@ -1,7 +1,7 @@
 use core::cell::Cell;
 
 use crate::math::{ Vec3, Matrix4 };
-use crate::utils::Arena;
+use crate::utils::{ Arena, MemoryBuffer };
 
 
 
@@ -10,6 +10,7 @@ pub struct Node<const N: usize> {
     pub position: Vec3,
     pub scale: Vec3,
     pub rotation: Vec3,
+    meta: bool,
     matrix: Cell<Matrix4>,
 }
 
@@ -21,6 +22,7 @@ impl<const N: usize> Default for Node<N> {
             position: Vec3::zero(),
             scale: Vec3::new(1.0, 1.0, 1.0),
             rotation: Vec3::zero(),
+            meta: false,
             matrix: Cell::new(Matrix4::identity()),
         }
     }
@@ -33,11 +35,11 @@ impl<const N: usize> Node<N> {
         Default::default()
     }
 
-    pub fn matrix(&self) -> Matrix4 {
-        self.matrix.get()
+    pub fn has_meta(&self) -> bool {
+        self.meta
     }
-
 }
+
 
 
 pub type Tree<const M: usize, const N: usize> = Arena<Node<N>, M>;
@@ -54,6 +56,7 @@ impl<const M: usize, const N: usize> Tree<M, N> {
         let id = self.add(Node::new());
 
         if let Some(meta) = meta {
+            self[id].meta = true;
             unsafe { crate::add_object(id, meta.as_ptr(), meta.len()); }
         }
 
@@ -62,8 +65,11 @@ impl<const M: usize, const N: usize> Tree<M, N> {
         id
     }
 
-    pub fn update_matrices(&self, world_matrix: Matrix4) {
+    pub fn update_matrices(
+        &self, world_matrix: Matrix4, buffer: &mut MemoryBuffer
+    ) {
         self.update_world_matrix(0, world_matrix);
+        self.add_matrices_to_buffer(buffer);
     }
 
     fn update_world_matrix(&self, node: usize, mut matrix: Matrix4) {
@@ -77,4 +83,20 @@ impl<const M: usize, const N: usize> Tree<M, N> {
             self.update_world_matrix(*id, matrix);
         }
     }
+
+    fn add_matrices_to_buffer(&self, buffer: &mut MemoryBuffer) {
+        self.slice()
+            .iter()
+            .enumerate()
+            .filter(|(_, x)| x.has_meta())
+            .for_each(|(i, _)| {
+                // utils::console_log(format!("id {}", i).as_str());
+                buffer.add_f32(i as f32);
+                buffer.add_f32(16.0);
+                buffer.add_f32(0.0);
+                buffer.add_f32(0.0);
+                buffer.add_matrix(&self[i].matrix.get());
+        });
+    }
+
 }

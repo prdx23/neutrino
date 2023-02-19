@@ -146,17 +146,9 @@ pub extern fn render(ptr: *mut Engine, t: f32, keys: u8) -> *const f32 {
     }
 
     engine.scenegraph.update_matrices(
-        engine.camera.view_projection_matrix()
+        engine.camera.view_projection_matrix(),
+        &mut engine.buffer,
     );
-
-    for i in 1..=3 {
-        // utils::console_log(format!("id {}", i).as_str());
-        engine.buffer.add_f32(i as f32);
-        engine.buffer.add_f32(16.0);
-        engine.buffer.add_f32(0.0);
-        engine.buffer.add_f32(0.0);
-        engine.buffer.add_matrix(&engine.scenegraph[i].matrix());
-    }
 
     engine.buffer.as_ptr()
 }
