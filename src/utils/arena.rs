@@ -1,6 +1,7 @@
 use core::ops::{ Index, IndexMut };
 
 
+#[derive(Clone)]
 pub struct Arena<T, const N: usize> {
     current: usize,
     arena: [T; N],

@@ -53,7 +53,7 @@ pub extern fn init() -> *mut Engine {
     add_buffer!(bytes, cube_vertex_colors, 3.0, true);
     add_buffer!(float, quad, 3.0, false);
 
-    let engine = Engine {
+    let mut engine = Engine {
         camera: Camera::perspective(
             Vec3::new(0.0, 300.0, 0.1),
             25.0, 1.0, 1.0, 4000.0
@@ -61,6 +61,12 @@ pub extern fn init() -> *mut Engine {
         buffer: MemoryBuffer::empty(),
         game: Game::init_scenegraph(),
     };
+
+    engine.game.scenegraph.update(
+        engine.camera.view_projection_matrix(),
+        &mut engine.buffer,
+    );
+
     Box::into_raw(Box::new(engine))
 }
 
@@ -78,7 +84,7 @@ pub extern fn render(ptr: *mut Engine, t: f32, keys: u8) -> *const f32 {
         &mut engine.game, t, keys, &mut engine.camera, &mut engine.buffer
     );
 
-    engine.game.scenegraph.update_matrices(
+    engine.game.scenegraph.update(
         engine.camera.view_projection_matrix(),
         &mut engine.buffer,
     );

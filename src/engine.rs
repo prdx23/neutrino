@@ -5,6 +5,10 @@ pub use camera::Camera;
 pub mod scenegraph;
 pub use scenegraph::Tree;
 
+pub mod boundingbox;
+pub use boundingbox::BoundingBox;
+
+
 use crate::utils::{MemoryBuffer};
 use crate::game::{Game};
 

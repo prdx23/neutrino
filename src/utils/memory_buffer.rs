@@ -2,7 +2,7 @@
 use crate::Matrix4;
 
 
-const BUFFER_SIZE: usize = 300;
+const BUFFER_SIZE: usize = 400;
 
 
 #[allow(dead_code)]

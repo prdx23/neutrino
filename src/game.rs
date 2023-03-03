@@ -1,11 +1,6 @@
 
-// pub mod boundingbox;
-// pub use boundingbox::BoundingBox;
-
-
-
 use crate::engine::{Camera, Tree};
-use crate::utils::{Arena, MemoryBuffer};
+use crate::utils::{Arena, MemoryBuffer, console_log};
 
 
 const NOBJECTS: usize = 20;
@@ -27,8 +22,10 @@ impl Game {
         let mut scenegraph = Tree::empty();
         let scene = scenegraph.root();
 
-        let ship = scenegraph.add_object(scene, Some(
-            r#"{
+        let ship = scenegraph.add_object(scene,
+            // None,
+            Some((12.0, 12.0)),
+            Some(r#"{
                 "shader": "vertex_color",
                 "count": 36,
                 "attributes": {
@@ -51,49 +48,61 @@ impl Game {
                 "a_color": "cube_vertex_colors"
             },
             "uniforms": {
-                "objectData": ["u_matrix"]
+                "objectData": ["u_matrix", "u_collide"]
             }
         }"#;
 
         let mut asteroids = Arena::empty();
 
-        for i in 0..8 {
-            let asteroid = scenegraph.add_object(scene, Some(asteroid_meta));
-            scenegraph[asteroid].scale.set(5.0, 5.0, 5.0);
-            scenegraph[asteroid].position.set(-100.0, 0.0, -100.0);
-            scenegraph[asteroid].position.x += 40.0 * i as f32;
-            asteroids.add(asteroid);
-        }
-
+        let temp = scenegraph.add_object(scene, None, Some(asteroid_meta));
+        // let temp = scenegraph.add_object(scene, Some(asteroid_meta));
         scenegraph[2].scale.set(280.0, 280.0, 280.0);
         scenegraph[2].position.set(200.0, -1000.0, 0.0);
         scenegraph[2].rotation.x = 45.0;
         scenegraph[2].rotation.y = 45.0;
 
+        let temp = scenegraph.add_object(scene, None, Some(asteroid_meta));
+        // let temp = scenegraph.add_object(scene, Some(asteroid_meta));
         scenegraph[3].scale.set(20.0, 20.0, 20.0);
         scenegraph[3].position.set(20.0, -300.0, -100.0);
         scenegraph[3].rotation.x = 15.0;
         scenegraph[3].rotation.y = 25.0;
 
+        let temp = scenegraph.add_object(scene, None, Some(asteroid_meta));
+        // let temp = scenegraph.add_object(scene, Some(asteroid_meta));
         scenegraph[4].scale.set(15.0, 15.0, 15.0);
         scenegraph[4].position.set(100.0, 100.0, -140.0);
         scenegraph[4].rotation.x = 15.0;
         scenegraph[4].rotation.y = 25.0;
 
-        // let test = scenegraph.add_object(scene, Some(
-        //     r#"{
-        //         "shader": "test",
-        //         "count": 6,
-        //         "attributes": {
-        //             "a_position": "quad"
-        //         },
-        //         "uniforms": {
-        //             "objectData": ["u_matrix"]
-        //         }
-        //     }"#),
-        // );
-        // scenegraph[test].scale.set(6.0, 6.0, 6.0);
-        // scenegraph[test].position = scenegraph[5].position;
+
+        let testmeta = r#"{
+            "shader": "test",
+            "count": 6,
+            "attributes": {
+                "a_position": "quad"
+            },
+            "uniforms": {
+                "objectData": ["u_matrix"]
+            }
+        }"#;
+
+        for i in 0..5 {
+            let asteroid = scenegraph.add_object(
+                scene, Some((12.0, 12.0)), Some(asteroid_meta)
+                // scene, Some(asteroid_meta)
+            );
+            scenegraph[asteroid].scale.set(5.0, 5.0, 5.0);
+            scenegraph[asteroid].position.set(-100.0, 0.0, -100.0);
+            scenegraph[asteroid].position.x += 40.0 * i as f32;
+            asteroids.add(asteroid);
+
+            let test = scenegraph.add_object(scene, None, Some(testmeta));
+            scenegraph[test].scale.set(12.0, 12.0, 12.0);
+            scenegraph[test].position = scenegraph[asteroid].position;
+        }
+
+
 
         Self {
             scenegraph, scene,
@@ -107,18 +116,28 @@ impl Game {
         camera: &mut Camera, buffer: &mut MemoryBuffer
     ) {
 
-        let mut ship = &mut game.scenegraph[game.ship];
+        for asteroid_id in game.asteroids.slice() {
+            buffer.add_f32(*asteroid_id as f32);
+            buffer.add_f32(1.0);
+            buffer.add_f32(0.0);
+            buffer.add_f32(1.0);
+            if game.scenegraph.collide(game.ship, *asteroid_id) {
+                buffer.add_f32(1.0);
+            } else {
+                buffer.add_f32(0.0);
+            }
+        }
 
-        if keys & (1 << 0) > 0 { ship.position.z -= 1.0; }
-        if keys & (1 << 1) > 0 { ship.position.x -= 1.0; }
-        if keys & (1 << 2) > 0 { ship.position.z += 1.0; }
-        if keys & (1 << 3) > 0 { ship.position.x += 1.0; }
+        let mut ship = &mut game.scenegraph[game.ship];
+        if keys & (1 << 0) > 0 { ship.position.z -= 0.4; }
+        if keys & (1 << 1) > 0 { ship.position.x -= 0.4; }
+        if keys & (1 << 2) > 0 { ship.position.z += 0.4; }
+        if keys & (1 << 3) > 0 { ship.position.x += 0.4; }
 
         camera.position.x = ship.position.x;
         camera.position.z = ship.position.z + 0.1;
         camera.look_at(ship.position);
         // camera.look_at(game.scenegraph[1].position);
-
 
         game.scenegraph[3].rotation.x = -t * 0.5;
         game.scenegraph[3].rotation.y = -t * 0.5;
