@@ -63,6 +63,7 @@ pub extern fn init() -> *mut Engine {
     };
 
     engine.game.scenegraph.update(
+        0.0,
         engine.camera.view_projection_matrix(),
         &mut engine.buffer,
     );
@@ -73,7 +74,10 @@ pub extern fn init() -> *mut Engine {
 
 
 #[no_mangle]
-pub extern fn render(ptr: *mut Engine, t: f32, keys: u8) -> *const f32 {
+pub extern fn render(
+    ptr: *mut Engine, t: f32, dt: f32, keys: u8
+) -> *const f32 {
+
     let engine = unsafe {
         assert!(!ptr.is_null());
         &mut *ptr
@@ -81,10 +85,11 @@ pub extern fn render(ptr: *mut Engine, t: f32, keys: u8) -> *const f32 {
     engine.buffer.reset();
 
     Game::render_frame(
-        &mut engine.game, t, keys, &mut engine.camera, &mut engine.buffer
+        &mut engine.game, t, dt, keys, &mut engine.camera, &mut engine.buffer
     );
 
     engine.game.scenegraph.update(
+        dt,
         engine.camera.view_projection_matrix(),
         &mut engine.buffer,
     );

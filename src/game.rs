@@ -108,7 +108,7 @@ impl Game {
 
 
     pub fn render_frame(
-        game: &mut Game, t: f32, keys: u8,
+        game: &mut Game, t: f32, dt: f32, keys: u8,
         camera: &mut Camera, buffer: &mut MemoryBuffer
     ) {
 

@@ -30,7 +30,7 @@ impl Vec3 {
     }
 
     pub fn is_near_zero(&self) -> bool {
-        self.x.abs() < 0.001 && self.y.abs() < 0.001 && self.z.abs() < 0.001
+        self.x.abs() < 0.0001 && self.y.abs() < 0.0001 && self.z.abs() < 0.0001
     }
 
     // pub fn inf() -> Vec3 {

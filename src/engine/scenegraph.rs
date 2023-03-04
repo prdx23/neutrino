@@ -79,7 +79,7 @@ impl<const N: usize> Node<N> {
     pub fn apply_force_z(&mut self, force: f32) { self.force.z += force; }
     pub fn apply_force(&mut self, force: Vec3)  { self.force += force; }
 
-    pub fn update_physics(&mut self) {
+    pub fn update_physics(&mut self, dt: f32) {
         if !(self.mass > 0.0) { return; }
 
         if self.velocity.is_near_zero() {
@@ -89,8 +89,8 @@ impl<const N: usize> Node<N> {
         }
 
         self.acceleration = self.force / self.mass;
-        self.velocity += self.acceleration;
-        self.position += self.velocity;
+        self.velocity += self.acceleration * dt;
+        self.position += self.velocity * dt;
 
         self.force.set(0.0, 0.0, 0.0);
     }
@@ -127,20 +127,20 @@ impl<const M: usize, const N: usize> Tree<M, N> {
 
 
     pub fn update(
-        &mut self, world_matrix: Matrix4, buffer: &mut MemoryBuffer
+        &mut self, dt: f32, world_matrix: Matrix4, buffer: &mut MemoryBuffer
     ) {
-        self.update_node(0, world_matrix);
+        self.update_node(0, dt, world_matrix);
         self.add_matrices_to_buffer(buffer);
     }
 
 
-    fn update_node(&mut self, node: usize, mut matrix: Matrix4) {
-        self[node].update_physics();
+    fn update_node(&mut self, node: usize, dt: f32, mut matrix: Matrix4) {
+        self[node].update_physics(dt);
         self[node].update_bbox();
 
         matrix = self[node].update_matrix(matrix);
         for id in self[node].children.clone().slice() {
-            self.update_node(*id, matrix);
+            self.update_node(*id, dt, matrix);
         }
     }
 

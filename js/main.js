@@ -144,14 +144,21 @@ function init() {
     gl.enable(gl.CULL_FACE)
     gl.enable(gl.DEPTH_TEST)
 
+    let prevdt, dt
 
-    function render() {
+    function render(currentdt) {
+
+        if( prevdt === undefined ) { prevdt = currentdt }
+        dt = currentdt - prevdt
+        prevdt = currentdt
+        dt = dt / 10
+
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
         gl.clearColor(0, 0, 0, 1)
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
         // gl.canvas.clientWidth, gl.canvas.clientHeight,
-        let bufferptr = wasm.instance.exports.render(ptr, t, keys)
+        let bufferptr = wasm.instance.exports.render(ptr, t, dt, keys)
         const buffer = new Float32Array(
             wasm.memory.buffer, bufferptr, BUFFER_SIZE
         )
@@ -206,7 +213,7 @@ function init() {
         t += 1
         requestAnimationFrame(render)
     }
-    render()
+    requestAnimationFrame(render)
 
 }
 
