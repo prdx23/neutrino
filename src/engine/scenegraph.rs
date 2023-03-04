@@ -1,4 +1,3 @@
-use core::cell::Cell;
 
 use crate::math::{ Vec3, Matrix4 };
 use crate::utils::{ Arena, MemoryBuffer };
@@ -42,6 +41,10 @@ impl<const N: usize> Node<N> {
         self.meta
     }
 
+    pub fn add_bbox(&mut self, bbox: BoundingBox) {
+        self.bbox = Some(bbox);
+    }
+
     pub fn update_matrix(&mut self, mut matrix: Matrix4) -> Matrix4 {
         matrix.translate(self.position);
         matrix.rotate(self.rotation);
@@ -74,15 +77,8 @@ impl<const M: usize, const N: usize> Tree<M, N> {
     }
 
 
-    pub fn add_object(
-        &mut self, parent: usize, bbox: Option<(f32, f32)>, meta: Option<&str>
-    ) -> usize {
-
+    pub fn add_object(&mut self, parent: usize, meta: Option<&str>) -> usize {
         let id = self.add(Node::new());
-
-        if let Some((w, h)) = bbox {
-            self[id].bbox = Some(BoundingBox::new(w, h));
-        }
 
         if let Some(meta) = meta {
             self[id].meta = true;
@@ -119,11 +115,7 @@ impl<const M: usize, const N: usize> Tree<M, N> {
             .filter(|(_, x)| x.has_meta())
             .for_each(|(i, _)| {
                 // utils::console_log(format!("id {}", i).as_str());
-                buffer.add_f32(i as f32);
-                buffer.add_f32(16.0);
-                buffer.add_f32(0.0);
-                buffer.add_f32(0.0);
-                buffer.add_matrix(&self[i].matrix);
+                buffer.add_matrix(i as f32, 0.0, 0.0, &self[i].matrix);
         });
     }
 

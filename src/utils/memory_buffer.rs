@@ -1,5 +1,5 @@
 
-use crate::Matrix4;
+use crate::math::Matrix4;
 
 
 const BUFFER_SIZE: usize = 400;
@@ -37,17 +37,29 @@ impl MemoryBuffer {
     }
 
 
-    pub fn add_f32(&mut self, value: f32) {
+    fn add_f32(&mut self, value: f32) {
         self.buffer[self.current] = value;
         self.current += 1;
     }
 
+    pub fn add_float(&mut self, id: f32, ublock: f32, uvar: f32, value: f32) {
+        self.add_f32(id);
+        self.add_f32(1.0);
+        self.add_f32(ublock);
+        self.add_f32(uvar);
+        self.add_f32(value);
+    }
 
-    pub fn add_matrix(&mut self, matrix: &Matrix4) {
+    pub fn add_matrix(
+        &mut self, id: f32, ublock: f32, uvar: f32, matrix: &Matrix4
+    ) {
+        self.add_f32(id);
+        self.add_f32(16.0);
+        self.add_f32(ublock);
+        self.add_f32(uvar);
         for row in matrix.matrix.iter() {
             for value in row.iter() {
-                self.buffer[self.current] = *value;
-                self.current += 1;
+                self.add_f32(*value);
             }
         }
     }
