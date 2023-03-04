@@ -9,9 +9,17 @@ pub struct Node<const N: usize> {
     pub position: Vec3,
     pub scale: Vec3,
     pub rotation: Vec3,
+
+    pub mass: f32,
+    pub friction: f32,
+    force: Vec3,
+    velocity: Vec3,
+    acceleration: Vec3,
+
     meta: bool,
     matrix: Matrix4,
     bbox: Option<BoundingBox>,
+
     children: Arena<usize, N>,
 }
 
@@ -22,6 +30,13 @@ impl<const N: usize> Default for Node<N> {
             position: Vec3::zero(),
             scale: Vec3::new(1.0, 1.0, 1.0),
             rotation: Vec3::zero(),
+
+            mass: 0.0,
+            friction: 0.0,
+            force: Vec3::zero(),
+            velocity: Vec3::zero(),
+            acceleration: Vec3::zero(),
+
             meta: false,
             matrix: Matrix4::identity(),
             bbox: None,
@@ -57,6 +72,27 @@ impl<const N: usize> Node<N> {
         if let Some(bbox) = self.bbox.as_mut() {
             (*bbox).update(self.position);
         }
+    }
+
+    pub fn apply_force_x(&mut self, force: f32) { self.force.x += force; }
+    pub fn apply_force_y(&mut self, force: f32) { self.force.y += force; }
+    pub fn apply_force_z(&mut self, force: f32) { self.force.z += force; }
+    pub fn apply_force(&mut self, force: Vec3)  { self.force += force; }
+
+    pub fn update_physics(&mut self) {
+        if !(self.mass > 0.0) { return; }
+
+        if self.velocity.is_near_zero() {
+            self.velocity.set(0.0, 0.0, 0.0);
+        } else {
+            self.apply_force(self.velocity * self.friction * -1.0);
+        }
+
+        self.acceleration = self.force / self.mass;
+        self.velocity += self.acceleration;
+        self.position += self.velocity;
+
+        self.force.set(0.0, 0.0, 0.0);
     }
 }
 
@@ -99,6 +135,7 @@ impl<const M: usize, const N: usize> Tree<M, N> {
 
 
     fn update_node(&mut self, node: usize, mut matrix: Matrix4) {
+        self[node].update_physics();
         self[node].update_bbox();
 
         matrix = self[node].update_matrix(matrix);

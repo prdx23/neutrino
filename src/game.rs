@@ -36,6 +36,8 @@ impl Game {
             }"#),
         );
         scenegraph[ship].scale.set(5.0, 5.0, 5.0);
+        scenegraph[ship].mass = 100.0;
+        scenegraph[ship].friction = 2.0;
         scenegraph[ship].add_bbox(BoundingBox::new(10.0, 10.0));
 
 
@@ -119,10 +121,14 @@ impl Game {
         }
 
         let mut ship = &mut game.scenegraph[game.ship];
-        if keys & (1 << 0) > 0 { ship.position.z -= 0.4; }
-        if keys & (1 << 1) > 0 { ship.position.x -= 0.4; }
-        if keys & (1 << 2) > 0 { ship.position.z += 0.4; }
-        if keys & (1 << 3) > 0 { ship.position.x += 0.4; }
+        if keys & (1 << 0) > 0 { ship.apply_force_z(-1.0); }
+        if keys & (1 << 1) > 0 { ship.apply_force_x(-1.0); }
+        if keys & (1 << 2) > 0 { ship.apply_force_z(1.0); }
+        if keys & (1 << 3) > 0 { ship.apply_force_x(1.0); }
+        // if keys & (1 << 0) > 0 { ship.position.z -= 1.0; }
+        // if keys & (1 << 1) > 0 { ship.position.x -= 1.0; }
+        // if keys & (1 << 2) > 0 { ship.position.z += 1.0; }
+        // if keys & (1 << 3) > 0 { ship.position.x += 1.0; }
 
         camera.position.x = ship.position.x;
         camera.position.z = ship.position.z + 0.1;

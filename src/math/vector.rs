@@ -5,7 +5,7 @@ use std::ops::{
 };
 
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Vec3 {
     pub x: f32,
     pub y: f32,
@@ -27,6 +27,10 @@ impl Vec3 {
         self.x = x;
         self.y = y;
         self.z = z;
+    }
+
+    pub fn is_near_zero(&self) -> bool {
+        self.x.abs() < 0.001 && self.y.abs() < 0.001 && self.z.abs() < 0.001
     }
 
     // pub fn inf() -> Vec3 {
