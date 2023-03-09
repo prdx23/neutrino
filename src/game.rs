@@ -36,9 +36,8 @@ impl Game {
             }"#),
         );
         scenegraph[ship].scale.set(5.0, 5.0, 5.0);
-        scenegraph[ship].mass = 100.0;
-        scenegraph[ship].friction = 2.0;
         scenegraph[ship].add_bbox(BoundingBox::new(10.0, 10.0));
+        scenegraph[ship].rigidbody.enable(100.0, 2.0);
 
 
         let asteroid_meta = r#"{
@@ -58,20 +57,20 @@ impl Game {
         let temp = scenegraph.add_object(scene, Some(asteroid_meta));
         scenegraph[temp].scale.set(280.0, 280.0, 280.0);
         scenegraph[temp].position.set(200.0, -1000.0, 0.0);
-        scenegraph[temp].rotation.x = 45.0;
-        scenegraph[temp].rotation.y = 45.0;
+        scenegraph[temp].rotation.x = 45.0 * crate::PI / 180.0;
+        scenegraph[temp].rotation.y = 45.0 * crate::PI / 180.0;
 
         let temp = scenegraph.add_object(scene, Some(asteroid_meta));
         scenegraph[temp].scale.set(20.0, 20.0, 20.0);
         scenegraph[temp].position.set(20.0, -300.0, -100.0);
-        scenegraph[temp].rotation.x = 15.0;
-        scenegraph[temp].rotation.y = 25.0;
+        // scenegraph[temp].rotation.x = 15.0 * crate::PI / 180.0;
+        // scenegraph[temp].rotation.y = 25.0 * crate::PI / 180.0;
 
         let temp = scenegraph.add_object(scene, Some(asteroid_meta));
         scenegraph[temp].scale.set(15.0, 15.0, 15.0);
         scenegraph[temp].position.set(100.0, 100.0, -140.0);
-        scenegraph[temp].rotation.x = 15.0;
-        scenegraph[temp].rotation.y = 25.0;
+        // scenegraph[temp].rotation.x = 15.0 * crate::PI / 180.0;
+        // scenegraph[temp].rotation.y = 25.0 * crate::PI / 180.0;
 
 
         let testmeta = r#"{
@@ -90,7 +89,8 @@ impl Game {
             scenegraph[asteroid].scale.set(5.0, 5.0, 5.0);
             scenegraph[asteroid].position.set(-100.0, 0.0, -100.0);
             scenegraph[asteroid].position.x += 40.0 * i as f32;
-            scenegraph[asteroid].add_bbox(BoundingBox::new(12.0, 12.0));
+            scenegraph[asteroid].add_bbox(BoundingBox::new(10.0, 10.0));
+            scenegraph[asteroid].rigidbody.enable(100.0, 2.0);
             asteroids.add(asteroid);
 
             let test = scenegraph.add_object(scene, Some(testmeta));
@@ -115,16 +115,33 @@ impl Game {
         for asteroid_id in game.asteroids.slice() {
             if game.scenegraph.collide(game.ship, *asteroid_id) {
                 buffer.add_float(*asteroid_id as f32, 0.0, 1.0, 1.0);
+
+                let v = game.scenegraph[game.ship].rigidbody.velocity;
+                let p = game.scenegraph[game.ship].position;
+                let ap = game.scenegraph[*asteroid_id].position;
+                game.scenegraph[*asteroid_id].rigidbody.apply_force_at_pos(
+                    v * 10.0, p - ap
+                );
+                game.scenegraph[game.ship].rigidbody.apply_force(-v * 10.0);
             } else {
                 buffer.add_float(*asteroid_id as f32, 0.0, 1.0, 0.0);
             }
         }
 
         let mut ship = &mut game.scenegraph[game.ship];
-        if keys & (1 << 0) > 0 { ship.apply_force_z(-1.0); }
-        if keys & (1 << 1) > 0 { ship.apply_force_x(-1.0); }
-        if keys & (1 << 2) > 0 { ship.apply_force_z(1.0); }
-        if keys & (1 << 3) > 0 { ship.apply_force_x(1.0); }
+
+        if keys & (1 << 0) > 0 {
+            ship.rigidbody.apply_force_comps(0.0, 0.0, -1.0);
+        }
+        if keys & (1 << 1) > 0 {
+            ship.rigidbody.apply_force_comps(-1.0, 0.0, 0.0);
+        }
+        if keys & (1 << 2) > 0 {
+            ship.rigidbody.apply_force_comps(0.0, 0.0, 1.0);
+        }
+        if keys & (1 << 3) > 0 {
+            ship.rigidbody.apply_force_comps(1.0, 0.0, 0.0);
+        }
         // if keys & (1 << 0) > 0 { ship.position.z -= 1.0; }
         // if keys & (1 << 1) > 0 { ship.position.x -= 1.0; }
         // if keys & (1 << 2) > 0 { ship.position.z += 1.0; }
@@ -135,11 +152,11 @@ impl Game {
         camera.look_at(ship.position);
         // camera.look_at(game.scenegraph[1].position);
 
-        game.scenegraph[3].rotation.x = -t * 0.5;
-        game.scenegraph[3].rotation.y = -t * 0.5;
+        game.scenegraph[3].rotation.x = -t * 0.5 * crate::PI / 180.0;
+        game.scenegraph[3].rotation.y = -t * 0.5 * crate::PI / 180.0;
 
-        game.scenegraph[4].rotation.x = -t * 0.5;
-        game.scenegraph[4].rotation.y = -t * 0.5;
+        game.scenegraph[4].rotation.x = -t * 0.5 * crate::PI / 180.0;
+        game.scenegraph[4].rotation.y = -t * 0.5 * crate::PI / 180.0;
     }
 
 }

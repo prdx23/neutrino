@@ -2,6 +2,7 @@
 use crate::math::{ Vec3, Matrix4 };
 use crate::utils::{ Arena, MemoryBuffer };
 use crate::engine::{ BoundingBox };
+use crate::physics::{ RigidBody };
 
 
 
@@ -10,11 +11,7 @@ pub struct Node<const N: usize> {
     pub scale: Vec3,
     pub rotation: Vec3,
 
-    pub mass: f32,
-    pub friction: f32,
-    force: Vec3,
-    velocity: Vec3,
-    acceleration: Vec3,
+    pub rigidbody: RigidBody,
 
     meta: bool,
     matrix: Matrix4,
@@ -31,11 +28,7 @@ impl<const N: usize> Default for Node<N> {
             scale: Vec3::new(1.0, 1.0, 1.0),
             rotation: Vec3::zero(),
 
-            mass: 0.0,
-            friction: 0.0,
-            force: Vec3::zero(),
-            velocity: Vec3::zero(),
-            acceleration: Vec3::zero(),
+            rigidbody: RigidBody::default(),
 
             meta: false,
             matrix: Matrix4::identity(),
@@ -74,26 +67,15 @@ impl<const N: usize> Node<N> {
         }
     }
 
-    pub fn apply_force_x(&mut self, force: f32) { self.force.x += force; }
-    pub fn apply_force_y(&mut self, force: f32) { self.force.y += force; }
-    pub fn apply_force_z(&mut self, force: f32) { self.force.z += force; }
-    pub fn apply_force(&mut self, force: Vec3)  { self.force += force; }
 
     pub fn update_physics(&mut self, dt: f32) {
-        if !(self.mass > 0.0) { return; }
-
-        if self.velocity.is_near_zero() {
-            self.velocity.set(0.0, 0.0, 0.0);
-        } else {
-            self.apply_force(self.velocity * self.friction * -1.0);
+        if self.rigidbody.is_enabled() {
+            (self.position, self.rotation) = self.rigidbody.update_physics(
+                self.position, self.rotation, dt
+            );
         }
-
-        self.acceleration = self.force / self.mass;
-        self.velocity += self.acceleration * dt;
-        self.position += self.velocity * dt;
-
-        self.force.set(0.0, 0.0, 0.0);
     }
+
 }
 
 

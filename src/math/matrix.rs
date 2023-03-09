@@ -79,8 +79,9 @@ impl Matrix4 {
 
 
     fn rotation_x(theta: f32) -> Self {
-        let sin = theta.to_radians().sin();
-        let cos = theta.to_radians().cos();
+        // assumption: theta is radians
+        let sin = theta.sin();
+        let cos = theta.cos();
         Self {
             matrix: [
                 [1.0, 0.0, 0.0, 0.0],
@@ -96,8 +97,9 @@ impl Matrix4 {
     }
 
     fn rotation_y(theta: f32) -> Self {
-        let sin = theta.to_radians().sin();
-        let cos = theta.to_radians().cos();
+        // assumption: theta is radians
+        let sin = theta.sin();
+        let cos = theta.cos();
         Self {
             matrix: [
                 [cos, 0.0,-sin, 0.0],
@@ -113,8 +115,9 @@ impl Matrix4 {
     }
 
     fn rotation_z(theta: f32) -> Self {
-        let sin = theta.to_radians().sin();
-        let cos = theta.to_radians().cos();
+        // assumption: theta is radians
+        let sin = theta.sin();
+        let cos = theta.cos();
         Self {
             matrix: [
                 [ cos, sin, 0.0, 0.0],
@@ -167,14 +170,15 @@ impl Matrix4 {
     }
 
     pub fn perspective(fov: f32, aspect: f32, near: f32, far: f32) -> Self {
-        let f = (std::f32::consts::PI * 0.5 - 0.5 * fov.to_radians()).tan();
+        // assumption: fov is degrees
+        let f = (0.5 * crate::PI - 0.5 * fov.to_radians()).tan();
         let range_inv = 1.0 / (near - far);
         Self {
             matrix: [
                 [f / aspect, 0.0, 0.0, 0.0],
                 [0.0, f, 0.0, 0.0],
                 [0.0, 0.0, (near + far) * range_inv, -1.0],
-                [0.0, 0.0, near * far * range_inv * 2.0, 0.0],
+                [0.0, 0.0, near * far * range_inv * 2.0, 1.0],
             ],
         }
     }
@@ -185,10 +189,10 @@ impl Matrix4 {
         let y_axis = (z_axis.cross(x_axis)).unit();
         Self {
             matrix: [
-                [x_axis[0], x_axis[1], x_axis[2], 0.0],
-                [y_axis[0], y_axis[1], y_axis[2], 0.0],
-                [z_axis[0], z_axis[1], z_axis[2], 0.0],
-                [camera_pos[0], camera_pos[1], camera_pos[2], 1.0],
+                [x_axis.x, x_axis.y, x_axis.z, 0.0],
+                [y_axis.x, y_axis.y, y_axis.z, 0.0],
+                [z_axis.x, z_axis.y, z_axis.z, 0.0],
+                [camera_pos.x, camera_pos.y, camera_pos.z, 1.0],
             ],
         }
     }
