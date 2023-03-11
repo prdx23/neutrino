@@ -5,9 +5,8 @@ mod physics;
 mod utils;
 mod game;
 
-use crate::engine::{Engine, Camera};
+use crate::engine::{Engine, Camera, MemoryBuffer};
 use crate::math::{Vec3, Matrix4, PI};
-use crate::utils::{MemoryBuffer};
 use crate::game::{Game};
 
 
@@ -63,8 +62,10 @@ pub extern fn init() -> *mut Engine {
         game: Game::init_scenegraph(),
     };
 
-    engine.game.scenegraph.update(
+    engine.game.scenegraph.recursive_update(
+        engine.game.scene,
         0.0,
+        Matrix4::identity(),
         engine.camera.view_projection_matrix(),
         &mut engine.buffer,
     );
@@ -83,17 +84,21 @@ pub extern fn render(
         assert!(!ptr.is_null());
         &mut *ptr
     };
-    engine.buffer.reset();
+    engine.buffer.buffer_reset();
 
     Game::render_frame(
-        &mut engine.game, t, dt, keys, &mut engine.camera, &mut engine.buffer
+        &mut engine.game,
+        t, dt, keys,
+        &mut engine.camera, &mut engine.buffer
     );
 
-    engine.game.scenegraph.update(
+    engine.game.scenegraph.recursive_update(
+        engine.game.scene,
         dt,
+        Matrix4::identity(),
         engine.camera.view_projection_matrix(),
         &mut engine.buffer,
     );
 
-    engine.buffer.as_ptr()
+    engine.buffer.buffer_as_ptr()
 }

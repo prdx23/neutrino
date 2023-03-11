@@ -48,10 +48,6 @@ impl RigidBody {
         self.moment_of_inertia = 10.0 * 10.0 * mass / 6.0;
     }
 
-    pub fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
     pub fn apply_force(&mut self, force: Vec3) {
         self.force += force;
     }

@@ -1,6 +1,5 @@
 
-use crate::engine::{Camera, Tree, BoundingBox};
-use crate::utils::{Arena, MemoryBuffer};
+use crate::engine::{Camera, Scenegraph, Arena, ArenaID, MemoryBuffer};
 
 
 const NOBJECTS: usize = 20;
@@ -8,18 +7,18 @@ const NCHILDREN: usize = 20;
 
 
 pub struct Game {
-    pub scenegraph: Tree<NOBJECTS, NCHILDREN>,
+    pub scenegraph: Scenegraph<NOBJECTS, NCHILDREN>,
 
-    pub scene: usize,
-    pub ship: usize,
-    pub asteroids: Arena<usize, 10>,
+    pub scene: ArenaID,
+    pub ship: ArenaID,
+    pub asteroids: Arena<ArenaID, 10>,
 }
 
 
 impl Game {
 
     pub fn init_scenegraph() -> Self {
-        let mut scenegraph = Tree::empty();
+        let mut scenegraph = Scenegraph::empty();
         let scene = scenegraph.root();
 
         let ship = scenegraph.add_object(scene,
@@ -36,7 +35,6 @@ impl Game {
             }"#),
         );
         scenegraph[ship].scale.set(5.0, 5.0, 5.0);
-        scenegraph[ship].add_bbox(BoundingBox::new(10.0, 10.0));
         scenegraph[ship].rigidbody.enable(100.0, 2.0);
 
 
@@ -89,7 +87,6 @@ impl Game {
             scenegraph[asteroid].scale.set(5.0, 5.0, 5.0);
             scenegraph[asteroid].position.set(-100.0, 0.0, -100.0);
             scenegraph[asteroid].position.x += 40.0 * i as f32;
-            scenegraph[asteroid].add_bbox(BoundingBox::new(10.0, 10.0));
             scenegraph[asteroid].rigidbody.enable(100.0, 2.0);
             asteroids.add(asteroid);
 
@@ -112,23 +109,7 @@ impl Game {
         camera: &mut Camera, buffer: &mut MemoryBuffer
     ) {
 
-        for asteroid_id in game.asteroids.slice() {
-            if game.scenegraph.collide(game.ship, *asteroid_id) {
-                buffer.add_float(*asteroid_id as f32, 0.0, 1.0, 1.0);
-
-                let v = game.scenegraph[game.ship].rigidbody.velocity;
-                let p = game.scenegraph[game.ship].position;
-                let ap = game.scenegraph[*asteroid_id].position;
-                game.scenegraph[*asteroid_id].rigidbody.apply_force_at_pos(
-                    v * 10.0, p - ap
-                );
-                game.scenegraph[game.ship].rigidbody.apply_force(-v * 10.0);
-            } else {
-                buffer.add_float(*asteroid_id as f32, 0.0, 1.0, 0.0);
-            }
-        }
-
-        let mut ship = &mut game.scenegraph[game.ship];
+        let ship = &mut game.scenegraph[game.ship];
 
         if keys & (1 << 0) > 0 {
             ship.rigidbody.apply_force_comps(0.0, 0.0, -1.0);
@@ -152,11 +133,11 @@ impl Game {
         camera.look_at(ship.position);
         // camera.look_at(game.scenegraph[1].position);
 
-        game.scenegraph[3].rotation.x = -t * 0.5 * crate::PI / 180.0;
-        game.scenegraph[3].rotation.y = -t * 0.5 * crate::PI / 180.0;
+        game.scenegraph[3.into()].rotation.x = -t * 0.5 * crate::PI / 180.0;
+        game.scenegraph[3.into()].rotation.y = -t * 0.5 * crate::PI / 180.0;
 
-        game.scenegraph[4].rotation.x = -t * 0.5 * crate::PI / 180.0;
-        game.scenegraph[4].rotation.y = -t * 0.5 * crate::PI / 180.0;
+        game.scenegraph[4.into()].rotation.x = -t * 0.5 * crate::PI / 180.0;
+        game.scenegraph[4.into()].rotation.y = -t * 0.5 * crate::PI / 180.0;
     }
 
 }
