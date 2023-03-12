@@ -20,12 +20,12 @@ let objects = {}
 const wasmImports = {
     imports: {
 
-        console_log_raw: (ptr, len) => {
+        js_console_log_raw: (ptr, len) => {
             const data = new Uint8Array(wasm.memory.buffer, ptr, len)
             console.log(textDecoder.decode(data))
         },
 
-        console_error_raw: (ptr, len) => {
+        js_console_error_raw: (ptr, len) => {
             const data = new Uint8Array(wasm.memory.buffer, ptr, len)
             let error = new Error()
             console.error(
@@ -33,7 +33,7 @@ const wasmImports = {
             )
         },
 
-        add_shader: (
+        js_add_shader: (
             name_ptr, name_len, vert_ptr, vert_len, frag_ptr, frag_len
         ) => {
 
@@ -51,7 +51,7 @@ const wasmImports = {
         },
 
 
-        add_buffer_float: (
+        js_add_buffer_float: (
             name_ptr, name_len, data_ptr, data_len, size, normalize
         ) => {
             let data
@@ -68,7 +68,7 @@ const wasmImports = {
             )
         },
 
-        add_buffer_bytes: (
+        js_add_buffer_bytes: (
             name_ptr, name_len, data_ptr, data_len, size, normalize
         ) => {
             let data
@@ -85,7 +85,7 @@ const wasmImports = {
             )
         },
 
-        add_object: (id, ptr, len) => {
+        js_add_object: (id, ptr, len) => {
             const data = new Uint8Array(wasm.memory.buffer, ptr, len)
             let meta = JSON.parse(textDecoder.decode(data))
             objects[id] = new Object3d(

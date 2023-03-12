@@ -9,7 +9,7 @@ pub mod memory_buffer;
 pub use memory_buffer::MemoryBuffer;
 
 pub mod scenegraph;
-pub use scenegraph::Scenegraph;
+pub use scenegraph::{ Node, Scenegraph };
 
 
 use crate::game::{Game};

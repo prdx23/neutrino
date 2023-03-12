@@ -16,7 +16,7 @@ pub fn set_panic_hook() {
         }
 
         unsafe {
-            crate::console_error_raw(msg.as_ptr(), msg.len());
+            crate::js_console_error_raw(msg.as_ptr(), msg.len());
         }
     }));
 }
@@ -24,13 +24,13 @@ pub fn set_panic_hook() {
 
 pub fn console_log(text: &str) {
     unsafe {
-        crate::console_log_raw(text.as_ptr(), text.len());
+        crate::js_console_log_raw(text.as_ptr(), text.len());
     }
 }
 
 pub fn console_error(text: &str) {
     unsafe {
-        crate::console_error_raw(text.as_ptr(), text.len());
+        crate::js_console_error_raw(text.as_ptr(), text.len());
     }
 }
 
@@ -47,7 +47,7 @@ macro_rules! add_shader {
                 concat!("shaders/", stringify!($name), ".frag")
             );
             unsafe {
-                crate::add_shader(
+                crate::js_add_shader(
                     name.as_ptr(), name.len(),
                     vert.as_ptr(), vert.len(),
                     frag.as_ptr(), frag.len(),
@@ -67,7 +67,7 @@ macro_rules! add_buffer {
                 concat!("data/", stringify!($name), ".json")
             );
             unsafe {
-                crate::add_buffer_float(
+                crate::js_add_buffer_float(
                     name.as_ptr(), name.len(),
                     data.as_ptr(), data.len(),
                     $size, $normalize
@@ -82,7 +82,7 @@ macro_rules! add_buffer {
                 concat!("data/", stringify!($name), ".json")
             );
             unsafe {
-                crate::add_buffer_bytes(
+                crate::js_add_buffer_bytes(
                     name.as_ptr(), name.len(),
                     data.as_ptr(), data.len(),
                     $size, $normalize

@@ -13,29 +13,29 @@ use crate::game::{Game};
 #[link(wasm_import_module = "imports")]
 extern {
 
-    fn console_log_raw(x: *const u8, l: usize);
+    fn js_console_log_raw(x: *const u8, l: usize);
 
-    fn console_error_raw(x: *const u8, l: usize);
+    fn js_console_error_raw(x: *const u8, l: usize);
 
-    fn add_shader(
+    fn js_add_shader(
         name_ptr: *const u8, name_len: usize,
         vert_ptr: *const u8, vert_len: usize,
         frag_ptr: *const u8, frag_len: usize,
     );
 
-    fn add_buffer_float(
+    fn js_add_buffer_float(
         name_ptr: *const u8, name_len: usize,
         data_ptr: *const u8, data_len: usize,
         size: f32, normalize: bool
     );
 
-    fn add_buffer_bytes(
+    fn js_add_buffer_bytes(
         name_ptr: *const u8, name_len: usize,
         data_ptr: *const u8, data_len: usize,
         size: f32, normalize: bool
     );
 
-    fn add_object(id: usize, ptr: *const u8, len: usize);
+    fn js_add_object(id: usize, ptr: *const u8, len: usize);
 
 }
 
