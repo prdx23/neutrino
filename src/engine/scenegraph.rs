@@ -2,7 +2,7 @@ use core::cell::Cell;
 
 use crate::math::{ Vec3, Matrix4 };
 use crate::engine::{ Arena, ArenaID, MemoryBuffer };
-use crate::physics::{ RigidBody };
+use crate::physics::{ RigidBody, Aabb };
 
 
 
@@ -11,6 +11,7 @@ pub struct Node<const N: usize> {
     pub scale: Vec3,
     pub rotation: Vec3,
     pub rigidbody: RigidBody,
+    pub aabb: Aabb,
     meta: Option<&'static str>,
     matrix: Matrix4,
     children: Arena<ArenaID, N>,
@@ -24,6 +25,7 @@ impl<const N: usize> Default for Node<N> {
             scale: Vec3::new(1.0, 1.0, 1.0),
             rotation: Vec3::zero(),
             rigidbody: RigidBody::default(),
+            aabb: Aabb::default(),
             meta: None,
             matrix: Matrix4::identity(),
             children: Arena::empty(),
@@ -46,6 +48,8 @@ impl<const N: usize> Node<N> {
         (self.position, self.rotation) = self.rigidbody.update_physics(
             self.position, self.rotation, dt
         );
+
+        self.aabb.update(self.position);
 
         matrix.translate(self.position);
         matrix.rotate(self.rotation);
@@ -134,8 +138,7 @@ impl<const M: usize, const N: usize> Scenegraph<M, N> {
 
         if node.meta.is_some() {
             let view_matrix = projection_matrix * matrix;
-            let id: usize = nodeid.into();
-            buffer.add_matrix(id as f32, 0.0, 0.0, &view_matrix);
+            buffer.add_matrix(nodeid.into(), 0.0, 0.0, &view_matrix);
         }
 
         for id in node.children.clone().slice() {

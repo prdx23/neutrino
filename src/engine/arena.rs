@@ -15,6 +15,10 @@ impl Into<usize> for ArenaID {
     fn into(self) -> usize { self.0 }
 }
 
+impl Into<f32> for ArenaID {
+    fn into(self) -> f32 { self.0 as f32 }
+}
+
 
 
 

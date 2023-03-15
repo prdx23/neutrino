@@ -34,6 +34,7 @@ impl Game {
         }"#));
         ship.scale.set(5.0, 5.0, 5.0);
         ship.rigidbody.enable(100.0, 2.0);
+        ship.aabb.enable(10.0, 10.0);
         let shipid = scenegraph.add_object(scene, ship);
 
 
@@ -90,6 +91,7 @@ impl Game {
             asteroid.position.set(-100.0, 0.0, -100.0);
             asteroid.position.x += 40.0 * i as f32;
             asteroid.rigidbody.enable(100.0, 2.0);
+            asteroid.aabb.enable(12.0, 12.0);
 
             let mut test = Node::new(Some(testmeta));
             test.scale.set(12.0, 12.0, 12.0);
@@ -116,6 +118,17 @@ impl Game {
         // let ship = &mut game.scenegraph.nodes[game.shipid];
         let mut ship = game.scenegraph.load(game.shipid);
 
+        for asteroid_id in game.asteroid_ids.slice() {
+            let asteroid = game.scenegraph.load_mut_ref(*asteroid_id);
+
+            if asteroid.aabb.collide(&ship.aabb) {
+                buffer.add_float((*asteroid_id).into(), 0.0, 1.0, 1.0);
+            } else {
+                buffer.add_float((*asteroid_id).into(), 0.0, 1.0, 0.0);
+            }
+
+        }
+
         if keys & (1 << 0) > 0 {
             ship.rigidbody.apply_force_comps(0.0, 0.0, -1.0);
         }
@@ -138,6 +151,9 @@ impl Game {
         camera.look_at(ship.position);
         // camera.look_at(game.scenegraph[1].position);
 
+
+
+
         game.scenegraph.store(game.shipid, ship);
 
 
@@ -147,7 +163,7 @@ impl Game {
         t3.rotation.x = -t * 0.5 * crate::PI / 180.0;
         t3.rotation.y = -t * 0.5 * crate::PI / 180.0;
 
-        let t4 = game.scenegraph.load_mut_ref(4.into());
+        let mut t4 = game.scenegraph.load_mut_ref(4.into());
         t4.rotation.x = -t * 0.5 * crate::PI / 180.0;
         t4.rotation.y = -t * 0.5 * crate::PI / 180.0;
     }
