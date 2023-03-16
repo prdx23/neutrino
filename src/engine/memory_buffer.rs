@@ -22,7 +22,7 @@ impl MemoryBuffer {
     }
 
     pub fn buffer_as_ptr(&mut self) -> *const f32 {
-        self[0.into()] = self.len() as f32;
+        self[0] = self.len() as f32;
         self.as_ptr()
     }
 

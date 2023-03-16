@@ -1,147 +1,148 @@
 use core::cell::Cell;
 
-use crate::math::{ Vec3, Matrix4 };
-use crate::engine::{ Arena, ArenaID, MemoryBuffer };
-use crate::physics::{ RigidBody, Aabb };
+use crate::math::{ Matrix4 };
+use crate::engine::{ Arena, MemoryBuffer };
+use crate::engine::entity::{ Entity, EntityBehavior };
 
 
 
-pub struct Node<const N: usize> {
-    pub position: Vec3,
-    pub scale: Vec3,
-    pub rotation: Vec3,
-    pub rigidbody: RigidBody,
-    pub aabb: Aabb,
-    meta: Option<&'static str>,
-    matrix: Matrix4,
-    children: Arena<ArenaID, N>,
+const NOBJECTS: usize = 20;
+const NCHILDREN: usize = 20;
+
+
+
+#[derive(Default, Clone, Copy)]
+pub struct NodeID(usize);
+
+impl From<usize> for NodeID {
+    fn from(value: usize) -> Self { Self(value) }
 }
 
-
-impl<const N: usize> Default for Node<N> {
-    fn default() -> Self {
-        Self {
-            position: Vec3::zero(),
-            scale: Vec3::new(1.0, 1.0, 1.0),
-            rotation: Vec3::zero(),
-            rigidbody: RigidBody::default(),
-            aabb: Aabb::default(),
-            meta: None,
-            matrix: Matrix4::identity(),
-            children: Arena::empty(),
-        }
-    }
+impl From<NodeID> for usize {
+    fn from(value: NodeID) -> usize { value.0 }
 }
 
-
-impl<const N: usize> Node<N> {
-
-    pub fn new(meta: Option<&'static str>) -> Self {
-        let mut node = Self::default();
-        node.meta = meta;
-        node
-    }
-
-
-    pub fn update_matrix(&mut self, dt: f32, mut matrix: Matrix4) -> Matrix4 {
-
-        (self.position, self.rotation) = self.rigidbody.update_physics(
-            self.position, self.rotation, dt
-        );
-
-        self.aabb.update(self.position);
-
-        matrix.translate(self.position);
-        matrix.rotate(self.rotation);
-        matrix.scale(self.scale);
-        self.matrix = matrix.clone();
-
-        matrix
-    }
-
+impl From<NodeID> for f32 {
+    fn from(value: NodeID) -> f32 { value.0 as f32 }
 }
 
 
 // --------------------------------------------------------
 
 
-
-pub struct Scenegraph<const M: usize, const N: usize> {
-    nodes: Arena<Cell<Node<N>>, M>,
-    loaded: u16,
+struct Node {
+    entity: Cell<Entity>,
+    children: Arena<NodeID, NCHILDREN>,
 }
 
 
-impl<const M: usize, const N: usize> Scenegraph<M, N> {
+impl Default for Node {
+    fn default() -> Self {
+        Self {
+            entity: Cell::new(Entity::default()),
+            children: Arena::empty(),
+        }
+    }
+}
+
+
+impl Node {
+    fn new(entity: Entity) -> Self {
+        Self {
+            entity: Cell::new(entity),
+            children: Arena::empty()
+        }
+    }
+}
+
+
+// --------------------------------------------------------
+
+
+pub struct Scenegraph {
+    nodes: Arena<Node, NOBJECTS>,
+}
+
+
+impl Scenegraph {
 
     pub fn empty() -> Self {
         Self {
             nodes: Arena::empty(),
-            loaded: 0,
         }
     }
 
 
-    pub fn root(&mut self) -> ArenaID {
+    pub fn root(&mut self) -> NodeID {
         if self.nodes.len() == 0 {
-            self.nodes.add(Node::default().into());
+            self.nodes.add(Node::default());
         }
-        ArenaID::from(0)
+        NodeID::from(0)
     }
 
 
-    pub fn add_object(&mut self, parent: ArenaID, node: Node<N>) -> ArenaID {
-        let id = match node.meta {
-            Some(m) => {
-                let id = self.nodes.add(node.into());
-                unsafe { crate::js_add_object(id.into(), m.as_ptr(), m.len()) }
-                id
-            },
-            None => self.nodes.add(node.into())
-        };
-        self.nodes[parent].get_mut().children.add(id);
+    pub fn add_entity(&mut self, parent: NodeID, entity: Entity) -> NodeID {
+
+        let meta = entity.shader_metadata();
+        let id = NodeID::from(self.nodes.add(Node::new(entity)));
+        self.nodes[parent.0].children.add(id);
+
+        if let Some(m) = meta {
+            unsafe { crate::js_add_object(id.0, m.as_ptr(), m.len()) }
+        }
+
         id
     }
 
 
-    pub fn load(&mut self, id: ArenaID) -> Node<N> {
-        self.loaded += 1;
-        self.nodes[id].take()
+    // pub fn load(&mut self, id: NodeID) -> Entity {
+    //     self.loaded += 1;
+    //     self.nodes[id.0].entity.take()
+    // }
+
+    // pub fn store(&mut self, id: NodeID, entity: Entity) {
+    //     self.loaded -= 1;
+    //     self.nodes[id.0].entity.replace(entity);
+    // }
+
+    pub fn with<T, F>(&self, id: NodeID, mut func: F)
+    where
+        F: FnMut(T) -> T,
+        T: From<Entity> + Into<Entity>
+    {
+        let mut entity = self.nodes[id.0].entity.take();
+        entity = func(entity.into()).into();
+        self.nodes[id.0].entity.replace(entity);
     }
 
-    pub fn store(&mut self, id: ArenaID, node: Node<N>) {
-        self.loaded -= 1;
-        self.nodes[id].replace(node);
-    }
 
-    pub fn load_mut_ref(&mut self, id: ArenaID) -> &mut Node<N> {
-        self.nodes[id].get_mut()
-    }
-
+    // pub fn recursive_update(
+    //     &self, id: NodeID, dt: f32,
+    //     m: Matrix4, pm: Matrix4, b: &mut MemoryBuffer
+    // ) {
+    //     if self.loaded > 0 { panic!("not all loaded Node{{}} returned!"); }
+    //     self.recursive_update_internal(id, dt, m, pm, b);
+    // }
 
     pub fn recursive_update(
-        &mut self, id: ArenaID, dt: f32,
-        m: Matrix4, pm: Matrix4, b: &mut MemoryBuffer
-    ) {
-        if self.loaded > 0 { panic!("not all loaded Node{{}} returned!"); }
-        self.recursive_update_internal(id, dt, m, pm, b);
-    }
-
-    fn recursive_update_internal(
-        &mut self, nodeid: ArenaID, dt: f32,
+        &self, nodeid: NodeID, dt: f32,
         mut matrix: Matrix4, projection_matrix: Matrix4,
         buffer: &mut MemoryBuffer
     ) {
 
-        let node = self.nodes[nodeid].get_mut();
-        matrix = node.update_matrix(dt, matrix);
+        let node = &self.nodes[nodeid.0];
+        let mut entity = node.entity.take();
 
-        if node.meta.is_some() {
+        matrix = entity.update_matrix(dt, matrix);
+
+        if entity.shader_metadata().is_some() {
             let view_matrix = projection_matrix * matrix;
-            buffer.add_matrix(nodeid.into(), 0.0, 0.0, &view_matrix);
+            buffer.add_matrix(f32::from(nodeid), 0.0, 0.0, &view_matrix);
         }
 
-        for id in node.children.clone().slice() {
+        node.entity.replace(entity);
+
+        for id in node.children.slice() {
             self.recursive_update(*id, dt, matrix, projection_matrix, buffer);
         }
     }
