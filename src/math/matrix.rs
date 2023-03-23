@@ -10,7 +10,7 @@ pub struct Matrix4 {
 
 impl Matrix4 {
 
-    pub fn identity() -> Self {
+    pub const fn identity() -> Self {
         Self {
             matrix: [
                 [1.0, 0.0, 0.0, 0.0],
@@ -318,10 +318,10 @@ impl Mul<Vec3> for Matrix4 {
     fn mul(self, p: Vec3) -> Vec3 {
         let mut result = Vec3::zero();
         for i in 0..3 {
-            result[i] = (self.matrix[i][0] * p.x)
-                      + (self.matrix[i][1] * p.y)
-                      + (self.matrix[i][2] * p.z)
-                      +  self.matrix[i][3];
+            result[i] = (self.matrix[0][i] * p.x)
+                      + (self.matrix[1][i] * p.y)
+                      + (self.matrix[2][i] * p.z)
+                      +  self.matrix[3][i];
         }
         result
     }

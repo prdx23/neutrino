@@ -9,6 +9,8 @@ pub struct Game {
 
     pub scene: NodeID,
     pub shipid: NodeID,
+    pub rot1: NodeID,
+    pub rot2: NodeID,
     pub asteroid_ids: Arena<NodeID, 10>,
 }
 
@@ -19,8 +21,8 @@ impl Game {
         let mut scenegraph = Scenegraph::empty();
         let scene = scenegraph.root();
 
-        let ship = Ship::new();
-        let shipid = scenegraph.add_entity(scene, Entity::from(ship));
+        let shipid = Ship::new(scene, &mut scenegraph);
+        // let shipid = scenegraph.add_entity(scene, Entity::from(ship));
 
 
         let asteroid_meta = r#"{
@@ -43,19 +45,15 @@ impl Game {
         temp.rotation.y = 45.0 * crate::PI / 180.0;
         scenegraph.add_entity(scene, Entity::from(temp));
 
-        let mut temp = Object3d::new(Some(asteroid_meta));
-        temp.scale.set(20.0, 20.0, 20.0);
-        temp.position.set(20.0, -300.0, -100.0);
-        // temp.rotation.x = 15.0 * crate::PI / 180.0;
-        // temp.rotation.y = 25.0 * crate::PI / 180.0;
-        scenegraph.add_entity(scene, Entity::from(temp));
+        let mut rot1 = Object3d::new(Some(asteroid_meta));
+        rot1.scale.set(20.0, 20.0, 20.0);
+        rot1.position.set(20.0, -300.0, -100.0);
+        let rot1 = scenegraph.add_entity(scene, Entity::from(rot1));
 
-        let mut temp = Object3d::new(Some(asteroid_meta));
-        temp.scale.set(15.0, 15.0, 15.0);
-        temp.position.set(100.0, 100.0, -140.0);
-        // temp.rotation.x = 15.0 * crate::PI / 180.0;
-        // temp.rotation.y = 25.0 * crate::PI / 180.0;
-        scenegraph.add_entity(scene, Entity::from(temp));
+        let mut rot2 = Object3d::new(Some(asteroid_meta));
+        rot2.scale.set(15.0, 15.0, 15.0);
+        rot2.position.set(100.0, 100.0, -140.0);
+        let rot2 = scenegraph.add_entity(scene, Entity::from(rot2));
 
 
         // let testmeta = r#"{
@@ -68,6 +66,7 @@ impl Game {
         //         "objectData": ["u_matrix"]
         //     }
         // }"#;
+
 
         let mut asteroid_ids = Arena::empty();
         // for i in 0..5 {
@@ -91,6 +90,7 @@ impl Game {
         Self {
             scenegraph, scene,
             shipid, asteroid_ids,
+            rot1, rot2,
         }
     }
 
@@ -101,38 +101,21 @@ impl Game {
     ) {
 
         game.scenegraph.with(game.shipid, |mut ship: Ship| {
-            if keys & (1 << 0) > 0 {
-                ship.rigidbody.apply_force_comps(0.0, 0.0, -1.0);
-            }
-            if keys & (1 << 1) > 0 {
-                ship.rigidbody.apply_force_comps(-1.0, 0.0, 0.0);
-            }
-            if keys & (1 << 2) > 0 {
-                ship.rigidbody.apply_force_comps(0.0, 0.0, 1.0);
-            }
-            if keys & (1 << 3) > 0 {
-                ship.rigidbody.apply_force_comps(1.0, 0.0, 0.0);
-            }
-            // if keys & (1 << 0) > 0 { ship.position.z -= 1.0; }
-            // if keys & (1 << 1) > 0 { ship.position.x -= 1.0; }
-            // if keys & (1 << 2) > 0 { ship.position.z += 1.0; }
-            // if keys & (1 << 3) > 0 { ship.position.x += 1.0; }
-
+            ship.update_frame(keys, &game.scenegraph);
             camera.position.x = ship.position.x;
             camera.position.z = ship.position.z + 0.1;
             camera.look_at(ship.position);
-
             ship
         });
 
 
-        game.scenegraph.with(3.into(), |mut obj: Object3d| {
+        game.scenegraph.with(game.rot1, |mut obj: Object3d| {
             obj.rotation.x = -t * 0.5 * crate::PI / 180.0;
             obj.rotation.y = -t * 0.5 * crate::PI / 180.0;
             obj
         });
 
-        game.scenegraph.with(4.into(), |mut obj: Object3d| {
+        game.scenegraph.with(game.rot2, |mut obj: Object3d| {
             obj.rotation.x = -t * 0.5 * crate::PI / 180.0;
             obj.rotation.y = -t * 0.5 * crate::PI / 180.0;
             obj

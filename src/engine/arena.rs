@@ -41,7 +41,7 @@ impl<T, const N: usize> Arena<T, N> where T: Default {
     }
 
     pub fn add(&mut self, item: T) -> usize {
-        assert!(self.current < N - 1);
+        assert!(self.current < N);
         unsafe { *self.arena.get_unchecked_mut(self.current) = item }
         self.current += 1;
         self.current - 1
@@ -71,4 +71,11 @@ impl<T, const N: usize> Arena<T, N> where T: Default {
     //     self.arena.iter_mut().take(self.current)
     // }
 
+}
+
+
+impl<T, const N: usize> From<[T; N]> for Arena<T, N> {
+    fn from(arena: [T; N]) -> Self {
+        Self { arena, current: N }
+    }
 }

@@ -91,3 +91,20 @@ macro_rules! add_buffer {
         }
     }
 }
+
+
+
+pub enum Keys {
+    W = 0,
+    A,
+    S,
+    D,
+    Q,
+    E,
+}
+
+impl Keys {
+    pub fn pressed(keybyte: u8, key: Keys) -> bool {
+        keybyte & (1 << key as u8) > 0
+    }
+}

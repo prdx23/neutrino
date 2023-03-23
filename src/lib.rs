@@ -50,6 +50,7 @@ pub extern fn init() -> *mut Engine {
     add_shader!(test);
 
     add_buffer!(float, cube_vertices, 3.0, false);
+    add_buffer!(float, ship_vertices, 3.0, false);
     add_buffer!(bytes, cube_vertex_colors, 3.0, true);
     add_buffer!(float, quad, 3.0, false);
 

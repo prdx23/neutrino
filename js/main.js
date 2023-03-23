@@ -219,6 +219,7 @@ function init() {
 
 const keyShifts = {
     KeyW: 0, KeyA: 1, KeyS: 2, KeyD: 3,
+    KeyQ: 4, KeyE: 5,
 }
 
 window.addEventListener("keydown", (event) => {
