@@ -3,7 +3,7 @@
 use crate::math::{ Vec3, Matrix4 };
 use crate::physics::{ RigidBody };
 use crate::engine::{ Arena };
-use crate::engine::entity::{ EntityBehavior, ShipEngineModule };
+use crate::engine::entity::{ EntityBehavior, Thruster };
 use crate::engine::scenegraph::{ NodeID, Scenegraph };
 use crate::utils::{ Keys };
 
@@ -51,43 +51,43 @@ impl Ship {
 
         let engines = [
             // ENGINE_LEFT_TOP,
-            scenegraph.add_entity(shipid, ShipEngineModule::new(
-                Vec3::new(-4.0, 0.0, -4.0), Vec3::new(1.0, 0.0, 0.0), 0.1,
+            scenegraph.add_entity(shipid, Thruster::new(
+                Vec3::new(-4.0, 0.0, -4.0), Vec3::new(1.0, 0.0, 0.0), 1.1,
             ).into()),
 
             // ENGINE_RIGHT_TOP,
-            scenegraph.add_entity(shipid, ShipEngineModule::new(
-                Vec3::new(4.0, 0.0, -4.0), Vec3::new(-1.0, 0.0, 0.0), 0.1,
+            scenegraph.add_entity(shipid, Thruster::new(
+                Vec3::new(4.0, 0.0, -4.0), Vec3::new(-1.0, 0.0, 0.0), 1.1,
             ).into()),
 
             // ENGINE_LEFT_BOTTOM,
-            scenegraph.add_entity(shipid, ShipEngineModule::new(
-                Vec3::new(-4.0, 0.0, 4.0), Vec3::new(1.0, 0.0, 0.0), 0.1,
+            scenegraph.add_entity(shipid, Thruster::new(
+                Vec3::new(-4.0, 0.0, 4.0), Vec3::new(1.0, 0.0, 0.0), 1.1,
             ).into()),
 
             // ENGINE_RIGHT_BOTTOM,
-            scenegraph.add_entity(shipid, ShipEngineModule::new(
-                Vec3::new(4.0, 0.0, 4.0), Vec3::new(-1.0, 0.0, 0.0), 0.1,
+            scenegraph.add_entity(shipid, Thruster::new(
+                Vec3::new(4.0, 0.0, 4.0), Vec3::new(-1.0, 0.0, 0.0), 1.1,
             ).into()),
 
             // ENGINE_FORWARD1,
-            scenegraph.add_entity(shipid, ShipEngineModule::new(
-                Vec3::new(-2.0, 0.0, 6.0), Vec3::new(0.0, 0.0, -1.0), 0.7,
+            scenegraph.add_entity(shipid, Thruster::new(
+                Vec3::new(-2.0, 0.0, 6.0), Vec3::new(0.0, 0.0, -1.0), 1.7,
             ).into()),
 
             // ENGINE_FORWARD2,
-            scenegraph.add_entity(shipid, ShipEngineModule::new(
-                Vec3::new(2.0, 0.0, 6.0), Vec3::new(0.0, 0.0, -1.0), 0.7,
+            scenegraph.add_entity(shipid, Thruster::new(
+                Vec3::new(2.0, 0.0, 6.0), Vec3::new(0.0, 0.0, -1.0), 1.7,
             ).into()),
 
             // ENGINE_BACKWARD1,
-            scenegraph.add_entity(shipid, ShipEngineModule::new(
-                Vec3::new(-1.0, 0.0, -6.0), Vec3::new(0.0, 0.0, 1.0), 0.3,
+            scenegraph.add_entity(shipid, Thruster::new(
+                Vec3::new(-1.0, 0.0, -6.0), Vec3::new(0.0, 0.0, 1.0), 1.3,
             ).into()),
 
             // ENGINE_BACKWARD2,
-            scenegraph.add_entity(shipid, ShipEngineModule::new(
-                Vec3::new(1.0, 0.0, -6.0), Vec3::new(0.0, 0.0, 1.0), 0.3,
+            scenegraph.add_entity(shipid, Thruster::new(
+                Vec3::new(1.0, 0.0, -6.0), Vec3::new(0.0, 0.0, 1.0), 1.3,
             ).into()),
         ];
 
@@ -100,7 +100,7 @@ impl Ship {
     }
 
     pub fn fire_engine(&mut self, scenegraph: &Scenegraph, location: usize) {
-        scenegraph.with(self.engines[location], |mut engine: ShipEngineModule| {
+        scenegraph.with(self.engines[location], |mut engine: Thruster| {
             engine.fire(&mut self.rigidbody);
             engine
         });

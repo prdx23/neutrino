@@ -5,8 +5,8 @@ pub use object3d::Object3d;
 pub mod ship;
 pub use ship::Ship;
 
-pub mod shipengine_module;
-pub use shipengine_module::ShipEngineModule;
+pub mod thruster;
+pub use thruster::Thruster;
 
 
 use crate::math::{ Matrix4 };
@@ -75,7 +75,7 @@ entity_enum! {
     pub enum Entity {
         Object3dEntity(Object3d),
         ShipEntity(Ship),
-        ShipEngineModuleEntity(ShipEngineModule),
+        ShipEngineModuleEntity(Thruster),
     }
 }
 

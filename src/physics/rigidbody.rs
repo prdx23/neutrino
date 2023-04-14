@@ -5,7 +5,7 @@ use crate::math::Vec3;
 
 pub struct RigidBody {
     pub mass: f32,
-    // pub damping_factor: f32,
+    pub damping_factor: f32,
     // pub coff_of_friction: f32,
     pub moment_of_inertia: f32,
 
@@ -21,13 +21,13 @@ pub struct RigidBody {
 impl RigidBody {
 
     const VELOCITY_LIMIT: f32 = 2.0;
-    const ANGULAR_VELOCITY_LIMIT: f32 = 0.1;
+    const ANGULAR_VELOCITY_LIMIT: f32 = 0.02;
 
 
     pub fn new(mass: f32, damping: f32) -> Self {
         Self {
             mass: mass,
-            // damping_factor: damping,
+            damping_factor: damping,
             // coff_of_friction: cof,
             moment_of_inertia: 10.0 * 10.0 * mass / 6.0,
             force: Vec3::zero(),
@@ -58,50 +58,56 @@ impl RigidBody {
 
         if !(self.mass > 0.0) { return; }
 
-        if self.velocity.is_near_zero() {
-            self.velocity.set(0.0, 0.0, 0.0);
-        }
-
-        if self.angular_velocity.is_near_zero() {
-            self.angular_velocity.set(0.0, 0.0, 0.0);
-        }
-
-
         // if self.velocity.is_near_zero() {
         //     self.velocity.set(0.0, 0.0, 0.0);
-        // } else {
-        //     self.apply_force(self.velocity * self.damping_factor * -1.0);
         // }
 
         // if self.angular_velocity.is_near_zero() {
         //     self.angular_velocity.set(0.0, 0.0, 0.0);
-        // } else {
-        //     self.torque += self.angular_velocity * self.moment_of_inertia * -0.1;
-        //     // self.torque += self.angular_velocity * 0.5 * -1.0;
         // }
 
 
-        let dtsq = dt * dt;
+        if self.velocity.is_near_zero() {
+            self.velocity.set(0.0, 0.0, 0.0);
+        } else {
+            self.apply_force(self.velocity * self.damping_factor * -1.0);
+        }
 
-        let velocity_half = self.velocity + (0.5 * self.acceleration * dtsq);
+        if self.angular_velocity.is_near_zero() {
+            self.angular_velocity.set(0.0, 0.0, 0.0);
+        } else {
+            self.torque += self.angular_velocity * self.moment_of_inertia * -0.1;
+            // self.torque += self.angular_velocity * 0.5 * -1.0;
+        }
+
+
+        let velocity_half = self.velocity + (0.5 * self.acceleration * dt * dt);
         *position += velocity_half * dt;
         self.acceleration = self.force / self.mass;
-        if velocity_half.len() < Self::VELOCITY_LIMIT {
-            self.velocity = velocity_half + (0.5 * self.acceleration * dtsq);
-        }
-        self.force.set(0.0, 0.0, 0.0);
+        self.velocity = velocity_half + (0.5 * self.acceleration * dt * dt);
 
 
         let ang_velocity_half = {
-            self.angular_velocity + (0.5 * self.angular_acceleration * dtsq)
+            self.angular_velocity + (0.5 * self.angular_acceleration * dt * dt)
         };
         *rotation += ang_velocity_half * dt;
         self.angular_acceleration = self.torque / self.moment_of_inertia;
-        if ang_velocity_half.len() < Self::ANGULAR_VELOCITY_LIMIT {
+        self.angular_velocity = {
+            ang_velocity_half + (0.5 * self.angular_acceleration * dt * dt)
+        };
+
+
+        if self.velocity.len() > Self::VELOCITY_LIMIT {
+            self.velocity = self.velocity.unit() * Self::VELOCITY_LIMIT;
+        }
+        if self.angular_velocity.len() > Self::ANGULAR_VELOCITY_LIMIT {
             self.angular_velocity = {
-                ang_velocity_half + (0.5 * self.angular_acceleration * dtsq)
+                self.angular_velocity.unit() * Self::ANGULAR_VELOCITY_LIMIT
             };
         }
+
+
+        self.force.set(0.0, 0.0, 0.0);
         self.torque.set(0.0, 0.0, 0.0);
 
     }

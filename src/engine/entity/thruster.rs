@@ -5,7 +5,7 @@ use crate::physics::{ RigidBody };
 use crate::engine::entity::EntityBehavior;
 
 
-pub struct ShipEngineModule {
+pub struct Thruster {
     position: Vec3,
     direction: Vec3,
     thrust: f32,
@@ -14,7 +14,7 @@ pub struct ShipEngineModule {
 }
 
 
-impl ShipEngineModule {
+impl Thruster {
 
     const META: &'static str = r#"{
         "shader": "test",
@@ -49,7 +49,7 @@ impl ShipEngineModule {
 
 }
 
-impl EntityBehavior for ShipEngineModule {
+impl EntityBehavior for Thruster {
 
     fn update_matrix(&mut self, _: f32, mut matrix: Matrix4) -> Matrix4 {
         self.matrix = matrix.clone();
