@@ -1,14 +1,22 @@
-// import { buffers } from './data.js'
 import { Shader, Buffer, Object3d } from './webgl.js'
 
 
 const width = 800
 const height = 800
 
+
+const canvas = document.getElementById('canvas')
+canvas.width = width
+canvas.height = height
+const gl = canvas.getContext('webgl2')
+
+
+
 const textDecoder = new TextDecoder()
 let wasm
 let t = 0
 let keys = 0
+let prevdt, dt
 let BUFFER_SIZE
 
 
@@ -48,6 +56,7 @@ const wasmImports = {
             let frag = textDecoder.decode(data)
 
             shaders[name] = new Shader(vert, frag)
+            shaders[name].compile(gl)
         },
 
 
@@ -66,6 +75,7 @@ const wasmImports = {
                 'FLOAT',
                 normalize == 0 ? false : true,
             )
+            buffers[name].load(gl)
         },
 
         js_add_buffer_bytes: (
@@ -83,6 +93,7 @@ const wasmImports = {
                 'UNSIGNED_BYTE',
                 normalize == 0 ? false : true,
             )
+            buffers[name].load(gl)
         },
 
         js_add_object: (id, ptr, len) => {
@@ -91,6 +102,9 @@ const wasmImports = {
             objects[id] = new Object3d(
                 meta.shader, meta.count, meta.attributes, meta.uniforms
             )
+
+            objects[id].load(gl, shaders, buffers)
+            shaders[objects[id].shader].objects.push(id)
         },
 
     },
@@ -99,6 +113,12 @@ const wasmImports = {
 
 
 async function load() {
+
+    if( !gl ) {
+        alert('webgl2 not available!')
+        return
+    }
+
     let file = 'target/wasm32-unknown-unknown/debug/neutrino_demo.wasm'
     // let file = 'target/wasm32-unknown-unknown/release/neutrino_demo.wasm'
     wasm = await WebAssembly.instantiateStreaming(fetch(file), wasmImports)
@@ -109,130 +129,98 @@ async function load() {
         WebAssembly.Module.customSections(wasm.module, 'BUFFER_SIZE'
     )[0])[0]
 
-    init()
+    wasm.ptr = wasm.instance.exports.init()
+
+
+    const keyShifts = {
+        KeyW: 0, KeyA: 1, KeyS: 2, KeyD: 3,
+        KeyQ: 4, KeyE: 5, Space: 6,
+    }
+
+    window.addEventListener("keydown", (event) => {
+        if (event.isComposing || event.keyCode === 229 || event.repeat) { return }
+        if( Object.keys(keyShifts).includes(event.code) ) {
+            keys |= 0b1 << keyShifts[event.code]
+        }
+        // console.log('key down!', event.code, keys.toString(2), keys)
+    })
+
+    window.addEventListener("keyup", (event) => {
+        if( Object.keys(keyShifts).includes(event.code) ) {
+            keys &= ~(0b1 << keyShifts[event.code])
+        }
+        // console.log('key up!', event.code, keys.toString(2), keys)
+    })
+
+    gl.enable(gl.CULL_FACE)
+    gl.enable(gl.DEPTH_TEST)
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+    gl.clearColor(0, 0, 0, 1)
+
+    requestAnimationFrame(render)
 }
 load()
 
 
 
-function init() {
-    let ptr = wasm.instance.exports.init()
 
-    const canvas = document.getElementById('canvas')
-    canvas.width = width
-    canvas.height = height
-    const gl = canvas.getContext('webgl2')
+function render(currentdt) {
 
-    if( !gl ) {
-        alert('webgl2 not available!')
-        return
+    if( prevdt === undefined ) { prevdt = currentdt }
+    dt = currentdt - prevdt
+    prevdt = currentdt
+    dt = dt / 10
+
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+    let bufferptr = wasm.instance.exports.render(wasm.ptr, t, dt, keys)
+
+    const buffer = new Float32Array(wasm.memory.buffer, bufferptr, BUFFER_SIZE)
+    // console.log(buffer)
+
+    let b = 0
+    let bufferLen = buffer[b++]
+
+    let uniformUpdates = {}
+    while( b < bufferLen ) {
+        let id = buffer[b++]
+        let len = buffer[b++]
+
+        if( !(id in uniformUpdates) ) {
+            uniformUpdates[id] = []
+        }
+
+        uniformUpdates[id].push({
+            ublock: buffer[b++],
+            uname: buffer[b++],
+            data: buffer.slice(b, b + len)
+        })
+        b += len
     }
+    // console.log(uniformUpdates)
+
 
     for( let shader of Object.values(shaders) ) {
-        shader.compile(gl)
-    }
+        gl.useProgram(shader.program)
 
-    for( let buffer of Object.values(buffers) ) {
-        buffer.load(gl)
-    }
+        for( let objectID of shader.objects ) {
+            let object = objects[objectID]
+            gl.bindVertexArray(object.vao)
 
-    for( let [id, object] of Object.entries(objects) ) {
-        object.load(gl, shaders, buffers)
-        shaders[object.shader].objects.push(id)
-    }
-
-    gl.enable(gl.CULL_FACE)
-    gl.enable(gl.DEPTH_TEST)
-
-    let prevdt, dt
-
-    function render(currentdt) {
-
-        if( prevdt === undefined ) { prevdt = currentdt }
-        dt = currentdt - prevdt
-        prevdt = currentdt
-        dt = dt / 10
-
-        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
-        gl.clearColor(0, 0, 0, 1)
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
-        // gl.canvas.clientWidth, gl.canvas.clientHeight,
-        let bufferptr = wasm.instance.exports.render(ptr, t, dt, keys)
-        const buffer = new Float32Array(
-            wasm.memory.buffer, bufferptr, BUFFER_SIZE
-        )
-        // console.log(buffer)
-
-        let b = 0
-        let bufferLen = buffer[b++]
-
-        let uniformUpdates = {}
-        while( b < bufferLen ) {
-            let id = buffer[b++]
-            let len = buffer[b++]
-
-            if( !(id in uniformUpdates) ) {
-                uniformUpdates[id] = []
+            for( let uniformUpdate of uniformUpdates[objectID] ) {
+                object.updateUniform(
+                    gl, shader.program,
+                    uniformUpdate.ublock,
+                    uniformUpdate.uname,
+                    uniformUpdate.data,
+                )
             }
 
-            uniformUpdates[id].push({
-                ublock: buffer[b++],
-                uname: buffer[b++],
-                data: buffer.slice(b, b + len)
-            })
-            b += len
+            gl.drawArrays(gl.TRIANGLES, 0, object.count)
+            gl.bindVertexArray(null)
         }
-        // console.log(uniformUpdates)
-
-
-        let i = 0
-        for( let shader of Object.values(shaders) ) {
-            gl.useProgram(shader.program)
-
-            for( let objectID of shader.objects ) {
-                let object = objects[objectID]
-                gl.bindVertexArray(object.vao)
-
-                for( let uniformUpdate of uniformUpdates[objectID] ) {
-                    object.updateUniform(
-                        gl, shader.program,
-                        uniformUpdate.ublock,
-                        uniformUpdate.uname,
-                        uniformUpdate.data,
-                    )
-                }
-
-                gl.drawArrays(gl.TRIANGLES, 0, object.count)
-                gl.bindVertexArray(null)
-                i += 1
-            }
-
-        }
-
-        t += 1
-        requestAnimationFrame(render)
     }
+
+    t += 1
     requestAnimationFrame(render)
-
 }
-
-const keyShifts = {
-    KeyW: 0, KeyA: 1, KeyS: 2, KeyD: 3,
-    KeyQ: 4, KeyE: 5,
-}
-
-window.addEventListener("keydown", (event) => {
-    if (event.isComposing || event.keyCode === 229 || event.repeat) { return }
-    if( Object.keys(keyShifts).includes(event.code) ) {
-        keys |= 0b1 << keyShifts[event.code]
-    }
-    // console.log('key down!', event.code, keys.toString(2), keys)
-})
-
-window.addEventListener("keyup", (event) => {
-    if( Object.keys(keyShifts).includes(event.code) ) {
-        keys &= ~(0b1 << keyShifts[event.code])
-    }
-    // console.log('key up!', event.code, keys.toString(2), keys)
-})

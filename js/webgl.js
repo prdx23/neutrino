@@ -1,8 +1,6 @@
 
 export let Shader = function(vertex, fragment) {
 
-    this.vertex = vertex
-    this.fragment = fragment
     this.program = null
     this.objects = []
 
@@ -13,15 +11,15 @@ export let Shader = function(vertex, fragment) {
             gl.compileShader(shader)
 
             if( !gl.getShaderParameter(shader, gl.COMPILE_STATUS) ) {
-                console.log('Shader Error: ', gl.getShaderInfoLog(shader))
+                console.error('Shader Error: ', gl.getShaderInfoLog(shader))
                 gl.deleteShader(shader)
             }
 
             return shader
         }
 
-        let vertexShader = createShader(gl.VERTEX_SHADER, this.vertex)
-        let fragmentShader = createShader(gl.FRAGMENT_SHADER, this.fragment)
+        let vertexShader = createShader(gl.VERTEX_SHADER, vertex)
+        let fragmentShader = createShader(gl.FRAGMENT_SHADER, fragment)
 
         let program = gl.createProgram()
         gl.attachShader(program, vertexShader)
@@ -29,7 +27,7 @@ export let Shader = function(vertex, fragment) {
         gl.linkProgram(program)
 
         if( !gl.getProgramParameter(program, gl.LINK_STATUS) ) {
-            console.log('Program Error: ', gl.getProgramInfoLog(program))
+            console.error('Program Error: ', gl.getProgramInfoLog(program))
             gl.deleteProgram(program)
         }
 
@@ -60,21 +58,16 @@ export let Buffer = function(data, drawType, size, type, normalize) {
 }
 
 
-let globalUboIndex = 0
-
 export let UniformBlock = function(name, variablesList) {
 
-    this.name = name
-    this.variablesList = variablesList
     this.buffer = null
-    this.blockIndex = null
     this.uboIndex = null
     this.variables = {}
 
-    this.load = function(gl, program) {
-        this.blockIndex = gl.getUniformBlockIndex(program, this.name)
+    this.load = function(gl, program, uboIndex) {
+        let blockIndex = gl.getUniformBlockIndex(program, name)
         let size = gl.getActiveUniformBlockParameter(
-            program, this.blockIndex, gl.UNIFORM_BLOCK_DATA_SIZE
+            program, blockIndex, gl.UNIFORM_BLOCK_DATA_SIZE
         )
 
         this.buffer = gl.createBuffer()
@@ -82,17 +75,17 @@ export let UniformBlock = function(name, variablesList) {
         gl.bufferData(gl.UNIFORM_BUFFER, size, gl.DYNAMIC_DRAW)
         gl.bindBuffer(gl.UNIFORM_BUFFER, null)
 
-        this.uboIndex = globalUboIndex
+        this.uboIndex = uboIndex
         gl.bindBufferBase(gl.UNIFORM_BUFFER, this.uboIndex, this.buffer)
-        globalUboIndex += 1
+        gl.uniformBlockBinding(program, this.blockIndex, this.uboIndex)
 
-        let variableIndices = gl.getUniformIndices(program, this.variablesList)
+        let variableIndices = gl.getUniformIndices(program, variablesList)
         let variableOffsets = gl.getActiveUniforms(
             program, variableIndices, gl.UNIFORM_OFFSET
         )
 
         this.variables = {}
-        for( let [i, variable] of this.variablesList.entries() ) {
+        for( let [i, variable] of variablesList.entries() ) {
             this.variables[variable] = {
                 index: variableIndices[i],
                 offset: variableOffsets[i],
@@ -105,8 +98,8 @@ export let UniformBlock = function(name, variablesList) {
         gl.bufferSubData(
             gl.UNIFORM_BUFFER, this.variables[variable].offset, data, 0
         )
-        gl.uniformBlockBinding(program, this.blockIndex, this.uboIndex)
         gl.bindBuffer(gl.UNIFORM_BUFFER, null)
+        gl.bindBufferBase(gl.UNIFORM_BUFFER, this.uboIndex, this.buffer)
     }
 
 }
@@ -142,7 +135,7 @@ export let Object3d = function(shader, count, attributes, uniforms) {
 
         for( let [blockName, variables] of Object.entries(this.uniforms) ) {
             this.uniformBlocks[blockName] = new UniformBlock(blockName, variables)
-            this.uniformBlocks[blockName].load(gl, program)
+            this.uniformBlocks[blockName].load(gl, program, 0)
         }
 
         gl.bindVertexArray(null)
