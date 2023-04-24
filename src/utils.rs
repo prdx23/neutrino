@@ -22,6 +22,13 @@ pub fn set_panic_hook() {
 }
 
 
+pub fn webgl_add_entity(meta: &'static str) -> usize {
+    unsafe {
+        crate::js_add_entity(meta.as_ptr(), meta.len())
+    }
+}
+
+
 pub fn console_log(text: &str) {
     unsafe {
         crate::js_console_log_raw(text.as_ptr(), text.len());
@@ -89,22 +96,5 @@ macro_rules! add_buffer {
                 );
             }
         }
-    }
-}
-
-
-
-pub enum Keys {
-    W = 0,
-    A,
-    S,
-    D,
-    Q,
-    E,
-}
-
-impl Keys {
-    pub fn pressed(keybyte: u8, key: Keys) -> bool {
-        keybyte & (1 << key as u8) > 0
     }
 }

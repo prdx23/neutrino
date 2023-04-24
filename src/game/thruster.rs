@@ -1,11 +1,14 @@
 
-
 use crate::math::{ Vec3, Matrix4 };
+use crate::engine::{ Frame };
 use crate::physics::{ RigidBody };
-use crate::engine::entity::EntityBehavior;
+use crate::engine::entity::{ EntityBehavior };
+use crate::utils;
+
 
 
 pub struct Thruster {
+    id: usize,
     position: Vec3,
     direction: Vec3,
     thrust: f32,
@@ -14,29 +17,28 @@ pub struct Thruster {
 }
 
 
+
 impl Thruster {
 
-    const META: &'static str = r#"{
-        "shader": "test",
-        "count": 6,
-        "attributes": {
-            "a_position": "quad"
-        },
-        "uniforms": {
-            "objectData": ["u_matrix"]
-        }
-    }"#;
-
-
-    const ORIGIN: Vec3 = Vec3::zero();
-
-    pub const fn new(position: Vec3, direction: Vec3, thrust: f32) -> Self {
+    pub fn new(position: Vec3, direction: Vec3, thrust: f32) -> Self {
         Self {
+            id: utils::webgl_add_entity(r#"{
+                "shader": "test",
+                "count": 6,
+                "attributes": {
+                    "a_position": "quad"
+                },
+                "uniforms": {
+                    "objectData": ["u_matrix"]
+                }
+            }"#),
             position, direction, thrust,
             firing: false,
             matrix: Matrix4::identity(),
         }
     }
+
+    const ORIGIN: Vec3 = Vec3::zero();
 
     pub fn fire(&mut self, rigidbody: &mut RigidBody) {
         let center = self.matrix * Self::ORIGIN;
@@ -51,7 +53,10 @@ impl Thruster {
 
 impl EntityBehavior for Thruster {
 
-    fn update_matrix(&mut self, _: f32, mut matrix: Matrix4) -> Matrix4 {
+    fn render_frame(&mut self, _: &mut Frame) {
+    }
+
+    fn update_uniforms(&mut self, frame: &mut Frame, mut matrix: Matrix4) {
         self.matrix = matrix.clone();
         if self.firing {
             matrix.translate(
@@ -59,11 +64,7 @@ impl EntityBehavior for Thruster {
             );
             self.firing = false;
         }
-        matrix
-    }
-
-    fn shader_metadata(&self) -> Option<&'static str> {
-        Some(Self::META)
+        frame.add_view_matrix(self.id, matrix);
     }
 
 }

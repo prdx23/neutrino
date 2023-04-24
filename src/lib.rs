@@ -5,8 +5,8 @@ mod physics;
 mod utils;
 mod game;
 
-use crate::engine::{Engine, Camera, MemoryBuffer};
-use crate::math::{Vec3, Matrix4, PI};
+use crate::engine::{Engine, Camera, Frame};
+use crate::math::{Vec3, PI};
 use crate::game::{Game};
 
 
@@ -35,7 +35,7 @@ extern {
         size: f32, normalize: bool
     );
 
-    fn js_add_object(id: usize, ptr: *const u8, len: usize);
+    fn js_add_entity(ptr: *const u8, len: usize) -> usize;
 
 }
 
@@ -54,22 +54,14 @@ pub extern fn init() -> *mut Engine {
     add_buffer!(bytes, cube_vertex_colors, 3.0, true);
     add_buffer!(float, quad, 3.0, false);
 
-    let mut engine = Engine {
+    let engine = Engine {
         camera: Camera::perspective(
             Vec3::new(0.0, 300.0, 0.1),
             25.0, 1.0, 1.0, 4000.0
         ),
-        buffer: MemoryBuffer::empty(),
-        game: Game::init_scenegraph(),
+        frame: Frame::new(),
+        game: Game::new(),
     };
-
-    engine.game.scenegraph.recursive_update(
-        engine.game.scene,
-        0.0,
-        Matrix4::identity(),
-        engine.camera.view_projection_matrix(),
-        &mut engine.buffer,
-    );
 
     Box::into_raw(Box::new(engine))
 }
@@ -85,21 +77,12 @@ pub extern fn render(
         assert!(!ptr.is_null());
         &mut *ptr
     };
-    engine.buffer.buffer_reset();
 
-    Game::render_frame(
-        &mut engine.game,
-        t, dt, keys,
-        &mut engine.camera, &mut engine.buffer
+    engine.frame.update(
+        t, dt, keys, engine.camera.view_projection_matrix()
     );
 
-    engine.game.scenegraph.recursive_update(
-        engine.game.scene,
-        dt,
-        Matrix4::identity(),
-        engine.camera.view_projection_matrix(),
-        &mut engine.buffer,
-    );
+    engine.game.render_frame(&mut engine.frame, &mut engine.camera);
 
-    engine.buffer.buffer_as_ptr()
+    engine.frame.buffer.buffer_as_ptr()
 }

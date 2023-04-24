@@ -2,26 +2,42 @@ use core::ops::{ Index, IndexMut };
 
 
 
-#[derive(Clone)]
+#[derive(Default, Clone, Copy)]
+pub struct ArenaID(usize);
+
+impl From<usize> for ArenaID {
+    fn from(value: usize) -> Self { Self(value) }
+}
+
+impl From<ArenaID> for usize {
+    fn from(value: ArenaID) -> usize { value.0 }
+}
+
+impl From<ArenaID> for f32 {
+    fn from(value: ArenaID) -> f32 { value.0 as f32 }
+}
+
+
+
 pub struct Arena<T, const N: usize> {
     current: usize,
     arena: [T; N],
 }
 
 
-impl<T, const N: usize> Index<usize> for Arena<T, N> {
+impl<T, const N: usize> Index<ArenaID> for Arena<T, N> {
     type Output = T;
-    fn index(&self, id: usize) -> &Self::Output {
-        assert!(id < self.current);
-        unsafe { self.arena.get_unchecked(id) }
+    fn index(&self, id: ArenaID) -> &Self::Output {
+        assert!(id.0 < self.current);
+        unsafe { self.arena.get_unchecked(id.0) }
     }
 }
 
 
-impl<T, const N: usize> IndexMut<usize> for Arena<T, N> {
-    fn index_mut(&mut self, id: usize) -> &mut Self::Output {
-        assert!(id < self.current);
-        unsafe { self.arena.get_unchecked_mut(id) }
+impl<T, const N: usize> IndexMut<ArenaID> for Arena<T, N> {
+    fn index_mut(&mut self, id: ArenaID) -> &mut Self::Output {
+        assert!(id.0 < self.current);
+        unsafe { self.arena.get_unchecked_mut(id.0) }
     }
 
 }
@@ -40,11 +56,11 @@ impl<T, const N: usize> Arena<T, N> where T: Default {
         self.current = 0;
     }
 
-    pub fn add(&mut self, item: T) -> usize {
+    pub fn add(&mut self, item: T) -> ArenaID {
         assert!(self.current < N);
         unsafe { *self.arena.get_unchecked_mut(self.current) = item }
         self.current += 1;
-        self.current - 1
+        ArenaID::from(self.current - 1)
     }
 
     pub fn len(&self) -> usize {

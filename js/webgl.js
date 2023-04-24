@@ -2,7 +2,7 @@
 export let Shader = function(vertex, fragment) {
 
     this.program = null
-    this.objects = []
+    this.entities = []
 
     this.compile = function(gl) {
         function createShader(type, source) {
@@ -105,7 +105,7 @@ export let UniformBlock = function(name, variablesList) {
 }
 
 
-export let Object3d = function(shader, count, attributes, uniforms) {
+export let Entity = function(shader, count, attributes, uniforms) {
 
     this.shader = shader
     this.count = count

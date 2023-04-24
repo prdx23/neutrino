@@ -1,4 +1,4 @@
-import { Shader, Buffer, Object3d } from './webgl.js'
+import { Shader, Buffer, Entity } from './webgl.js'
 
 
 const width = 800
@@ -22,7 +22,9 @@ let BUFFER_SIZE
 
 let shaders = {}
 let buffers = {}
-let objects = {}
+let entities = {}
+
+let allIds = new Set()
 
 
 const wasmImports = {
@@ -96,15 +98,24 @@ const wasmImports = {
             buffers[name].load(gl)
         },
 
-        js_add_object: (id, ptr, len) => {
+        js_add_entity: (ptr, len) => {
             const data = new Uint8Array(wasm.memory.buffer, ptr, len)
             let meta = JSON.parse(textDecoder.decode(data))
-            objects[id] = new Object3d(
+
+            let id = Math.floor(Math.random() * 999998) + 1
+            while( allIds.has(id) ) {
+                id = Math.floor(Math.random() * 999998) + 1
+            }
+            allIds.add(id)
+
+            entities[id] = new Entity(
                 meta.shader, meta.count, meta.attributes, meta.uniforms
             )
 
-            objects[id].load(gl, shaders, buffers)
-            shaders[objects[id].shader].objects.push(id)
+            entities[id].load(gl, shaders, buffers)
+            shaders[entities[id].shader].entities.push(id)
+
+            return id
         },
 
     },
@@ -203,20 +214,22 @@ function render(currentdt) {
     for( let shader of Object.values(shaders) ) {
         gl.useProgram(shader.program)
 
-        for( let objectID of shader.objects ) {
-            let object = objects[objectID]
-            gl.bindVertexArray(object.vao)
+        for( let entityID of shader.entities ) {
+            let entity = entities[entityID]
+            gl.bindVertexArray(entity.vao)
 
-            for( let uniformUpdate of uniformUpdates[objectID] ) {
-                object.updateUniform(
-                    gl, shader.program,
-                    uniformUpdate.ublock,
-                    uniformUpdate.uname,
-                    uniformUpdate.data,
-                )
+            if( entityID in uniformUpdates ) {
+                for( let uniformUpdate of uniformUpdates[entityID] ) {
+                    entity.updateUniform(
+                        gl, shader.program,
+                        uniformUpdate.ublock,
+                        uniformUpdate.uname,
+                        uniformUpdate.data,
+                    )
+                }
             }
 
-            gl.drawArrays(gl.TRIANGLES, 0, object.count)
+            gl.drawArrays(gl.TRIANGLES, 0, entity.count)
             gl.bindVertexArray(null)
         }
     }

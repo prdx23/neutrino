@@ -1,29 +1,34 @@
 
-use crate::engine::{Camera, Arena, MemoryBuffer};
-use crate::engine::scenegraph::{ Scenegraph, NodeID };
-use crate::engine::entity::{ Entity, Ship, Object3d };
+pub mod object3d;
+pub use object3d::Object3d;
+
+pub mod ship;
+pub use ship::Ship;
+
+pub mod thruster;
+pub use thruster::Thruster;
+
+
+use crate::engine::{Camera, Arena, ArenaID, Frame};
+use crate::engine::entity::{ EntityBehavior };
+use crate::math::{ Matrix4 };
+
 
 
 pub struct Game {
-    pub scenegraph: Scenegraph,
-
-    pub scene: NodeID,
-    pub shipid: NodeID,
-    pub rot1: NodeID,
-    pub rot2: NodeID,
-    pub asteroid_ids: Arena<NodeID, 10>,
+    pub ship: Ship,
+    pub rot1: ArenaID,
+    pub rot2: ArenaID,
+    pub objects: Arena<Object3d, 10>,
 }
+
 
 
 impl Game {
 
-    pub fn init_scenegraph() -> Self {
-        let mut scenegraph = Scenegraph::empty();
-        let scene = scenegraph.root();
+    pub fn new() -> Self {
 
-        let shipid = Ship::new(scene, &mut scenegraph);
-        // let shipid = scenegraph.add_entity(scene, Entity::from(ship));
-
+        let ship = Ship::new();
 
         let asteroid_meta = r#"{
             "shader": "vertex_color",
@@ -38,22 +43,24 @@ impl Game {
         }"#;
 
 
-        let mut temp = Object3d::new(Some(asteroid_meta));
+        let mut objects = Arena::empty();
+
+        let mut temp = Object3d::new(asteroid_meta);
         temp.scale.set(280.0, 280.0, 280.0);
         temp.position.set(200.0, -1000.0, 0.0);
         temp.rotation.x = 45.0 * crate::PI / 180.0;
         temp.rotation.y = 45.0 * crate::PI / 180.0;
-        scenegraph.add_entity(scene, Entity::from(temp));
+        objects.add(temp);
 
-        let mut rot1 = Object3d::new(Some(asteroid_meta));
+        let mut rot1 = Object3d::new(asteroid_meta);
         rot1.scale.set(20.0, 20.0, 20.0);
         rot1.position.set(20.0, -300.0, -100.0);
-        let rot1 = scenegraph.add_entity(scene, Entity::from(rot1));
+        let rot1 = objects.add(rot1);
 
-        let mut rot2 = Object3d::new(Some(asteroid_meta));
+        let mut rot2 = Object3d::new(asteroid_meta);
         rot2.scale.set(15.0, 15.0, 15.0);
         rot2.position.set(100.0, 100.0, -140.0);
-        let rot2 = scenegraph.add_entity(scene, Entity::from(rot2));
+        let rot2 = objects.add(rot2);
 
 
         // let testmeta = r#"{
@@ -68,7 +75,7 @@ impl Game {
         // }"#;
 
 
-        let mut asteroid_ids = Arena::empty();
+        // let mut asteroid_ids = Arena::empty();
         // for i in 0..5 {
         //     let mut asteroid = Node::new(Some(asteroid_meta));
         //     asteroid.scale.set(5.0, 5.0, 5.0);
@@ -88,39 +95,37 @@ impl Game {
 
 
         Self {
-            scenegraph, scene,
-            shipid, asteroid_ids,
+            ship,
             rot1, rot2,
+            objects,
         }
     }
 
 
-    pub fn render_frame(
-        game: &mut Game, t: f32, dt: f32, keys: u8,
-        camera: &mut Camera, buffer: &mut MemoryBuffer
-    ) {
+    pub fn render_frame(&mut self, frame: &mut Frame, camera: &mut Camera) {
 
-        game.scenegraph.with(game.shipid, |mut ship: Ship| {
-            ship.update_frame(keys, &game.scenegraph);
-            camera.position.x = ship.position.x;
-            camera.position.z = ship.position.z + 0.1;
-            camera.look_at(ship.position);
-            ship
-        });
+        self.ship.render_frame(frame);
+
+        camera.position.x = self.ship.position.x;
+        camera.position.z = self.ship.position.z + 0.1;
+        camera.look_at(self.ship.position);
+
+        // for object in game.objects.slice_mut() {
+        //     object.render_frame(frame);
+        // }
 
 
-        game.scenegraph.with(game.rot1, |mut obj: Object3d| {
-            obj.rotation.x = -t * 0.5 * crate::PI / 180.0;
-            obj.rotation.y = -t * 0.5 * crate::PI / 180.0;
-            obj
-        });
+        self.objects[self.rot1].rotation.x = -frame.t * 0.5 * crate::PI / 180.0;
+        self.objects[self.rot1].rotation.y = -frame.t * 0.5 * crate::PI / 180.0;
+        self.objects[self.rot2].rotation.x = -frame.t * 0.5 * crate::PI / 180.0;
+        self.objects[self.rot2].rotation.y = -frame.t * 0.5 * crate::PI / 180.0;
 
-        game.scenegraph.with(game.rot2, |mut obj: Object3d| {
-            obj.rotation.x = -t * 0.5 * crate::PI / 180.0;
-            obj.rotation.y = -t * 0.5 * crate::PI / 180.0;
-            obj
-        });
 
+        self.ship.update_uniforms(frame, Matrix4::identity());
+
+        for object in self.objects.slice_mut() {
+            object.update_uniforms(frame, Matrix4::identity());
+        }
     }
 
 }
