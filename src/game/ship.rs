@@ -3,7 +3,7 @@ use crate::math::{ Vec3, Matrix4 };
 use crate::physics::{ RigidBody };
 use crate::engine::entity::{ EntityBehavior };
 use crate::engine::{ Key, Frame };
-use crate::game::{ Thruster };
+use crate::game::{ Thruster, Gun };
 use crate::utils;
 
 
@@ -14,6 +14,8 @@ pub struct Ship {
     pub rotation: Vec3,
     rigidbody: RigidBody,
     thrusters: [Thruster; 8],
+    gun1: Gun,
+    gun2: Gun,
 }
 
 
@@ -31,7 +33,7 @@ impl Ship {
 
 
     pub fn new() -> Self {
-        let ship = Self {
+        Self {
             id: utils::webgl_add_entity(r#"{
                 "shader": "vertex_color",
                 "count": 36,
@@ -80,14 +82,13 @@ impl Ship {
                     Vec3::new(1.0, 0.0, -6.0), Vec3::new(0.0, 0.0, 1.0), 1.3,
                 ),
             ],
-            // gun: Default::default(),
-        };
-
-        // let gun = scenegraph.add_entity(shipid, Gun::new(
-        //     Vec3::new(0.0, 0.0, -5.0), Vec3::new(0.0, 0.0, -1.0)
-        // ).into());
-
-        ship
+            gun1: Gun::new(
+                Vec3::new(2.0, 0.0, -5.0), Vec3::new(0.0, 0.0, -1.0)
+            ),
+            gun2: Gun::new(
+                Vec3::new(-2.0, 0.0, -5.0), Vec3::new(0.0, 0.0, -1.0)
+            ),
+        }
     }
 
 }
@@ -124,19 +125,24 @@ impl EntityBehavior for Ship {
             self.thrusters[Self::THRUSTER_RIGHT_BOTTOM].fire(&mut self.rigidbody);
         }
 
-        // if frame.pressed(Key::Space) {
-        //     let mut gun: Gun = scenegraph.load(self.gun).into();
-        //     gun.shoot(t, &mut self.rigidbody, scenegraph, self.gun);
-        //     scenegraph.store(self.gun, gun.into());
-        // }
+        if frame.pressed(Key::Space) {
+            if frame.t % 2.0 == 0.0 {
+                self.gun1.shoot(frame, self.rotation, &mut self.rigidbody);
+            } else {
+                self.gun2.shoot(frame, self.rotation, &mut self.rigidbody);
+            }
+        }
 
         self.rigidbody.update_physics(
             frame.dt, &mut self.position, &mut self.rotation
         );
 
-        // for thruster in self.thrusters.iter_mut() {
-        //     thruster.render_frame(frame);
-        // }
+        self.gun1.render_frame(frame);
+        self.gun2.render_frame(frame);
+
+        for thruster in self.thrusters.iter_mut() {
+            thruster.render_frame(frame);
+        }
     }
 
 
@@ -144,6 +150,9 @@ impl EntityBehavior for Ship {
         matrix.translate(self.position);
         matrix.rotate(self.rotation);
         frame.add_view_matrix(self.id, matrix);
+
+        self.gun1.update_uniforms(frame, matrix);
+        self.gun2.update_uniforms(frame, matrix);
 
         for thruster in self.thrusters.iter_mut() {
             thruster.update_uniforms(frame, matrix);

@@ -15,13 +15,16 @@ pub struct RigidBody {
     torque: Vec3,
     angular_velocity: Vec3,
     angular_acceleration: Vec3,
+
+    pub velocity_limit: f32,
+    pub angular_velocity_limit: f32,
 }
 
 
 impl RigidBody {
 
-    const VELOCITY_LIMIT: f32 = 2.0;
-    const ANGULAR_VELOCITY_LIMIT: f32 = 0.02;
+    // const VELOCITY_LIMIT: f32 = 2.0;
+    // const ANGULAR_VELOCITY_LIMIT: f32 = 0.02;
 
 
     pub fn new(mass: f32, damping: f32) -> Self {
@@ -36,7 +39,25 @@ impl RigidBody {
             torque: Vec3::zero(),
             angular_velocity: Vec3::zero(),
             angular_acceleration: Vec3::zero(),
+            velocity_limit: 2.0,
+            angular_velocity_limit: 0.02,
         }
+    }
+
+    pub fn reset(&mut self) {
+        self.force = Vec3::zero();
+        self.velocity = Vec3::zero();
+        self.acceleration = Vec3::zero();
+        self.torque = Vec3::zero();
+        self.angular_velocity = Vec3::zero();
+        self.angular_acceleration = Vec3::zero();
+    }
+
+    pub fn inherit(&mut self, other: &Self) {
+        self.velocity = other.velocity;
+        self.acceleration = other.acceleration;
+        self.angular_velocity = other.angular_velocity;
+        self.angular_acceleration = other.angular_acceleration;
     }
 
     pub fn apply_force(&mut self, force: Vec3) {
@@ -97,12 +118,12 @@ impl RigidBody {
         };
 
 
-        if self.velocity.len() > Self::VELOCITY_LIMIT {
-            self.velocity = self.velocity.unit() * Self::VELOCITY_LIMIT;
+        if self.velocity.len() > self.velocity_limit {
+            self.velocity = self.velocity.unit() * self.velocity_limit;
         }
-        if self.angular_velocity.len() > Self::ANGULAR_VELOCITY_LIMIT {
+        if self.angular_velocity.len() > self.angular_velocity_limit {
             self.angular_velocity = {
-                self.angular_velocity.unit() * Self::ANGULAR_VELOCITY_LIMIT
+                self.angular_velocity.unit() * self.angular_velocity_limit
             };
         }
 

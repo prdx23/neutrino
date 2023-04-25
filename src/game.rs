@@ -8,6 +8,12 @@ pub use ship::Ship;
 pub mod thruster;
 pub use thruster::Thruster;
 
+pub mod gun;
+pub use gun::Gun;
+
+pub mod bullet;
+pub use bullet::Bullet;
+
 
 use crate::engine::{Camera, Arena, ArenaID, Frame};
 use crate::engine::entity::{ EntityBehavior };

@@ -37,6 +37,8 @@ extern {
 
     fn js_add_entity(ptr: *const u8, len: usize) -> usize;
 
+    // fn js_destroy_entity(id: usize);
+
 }
 
 

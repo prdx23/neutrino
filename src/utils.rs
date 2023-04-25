@@ -28,6 +28,12 @@ pub fn webgl_add_entity(meta: &'static str) -> usize {
     }
 }
 
+// pub fn webgl_destroy_entity(id: usize) {
+//     unsafe {
+//         crate::js_destroy_entity(id);
+//     }
+// }
+
 
 pub fn console_log(text: &str) {
     unsafe {
