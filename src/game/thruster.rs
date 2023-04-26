@@ -32,7 +32,8 @@ impl Thruster {
                     "objectData": ["u_matrix"]
                 }
             }"#),
-            position, direction, thrust,
+            position, direction,
+            thrust: thrust * 1000.0,   // in kN
             firing: false,
             matrix: Matrix4::identity(),
         }
@@ -60,7 +61,7 @@ impl EntityBehavior for Thruster {
         self.matrix = matrix.clone();
         if self.firing {
             matrix.translate(
-                self.position + (self.direction * -1.0 * self.thrust * 4.0)
+                self.position + (self.direction * -1.0 * 4.0)
             );
             self.firing = false;
         }

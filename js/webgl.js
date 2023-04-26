@@ -60,13 +60,15 @@ export let Buffer = function(data, drawType, size, type, normalize) {
 
 export let UniformBlock = function(name, variablesList) {
 
+    this.name = name
+    this.variablesList = variablesList
     this.buffer = null
     this.uboIndex = null
-    this.variables = {}
+    this.variableOffsets = new Map()
 
     this.load = function(gl, program, uboIndex) {
-        let blockIndex = gl.getUniformBlockIndex(program, name)
-        let size = gl.getActiveUniformBlockParameter(
+        const blockIndex = gl.getUniformBlockIndex(program, this.name)
+        const size = gl.getActiveUniformBlockParameter(
             program, blockIndex, gl.UNIFORM_BLOCK_DATA_SIZE
         )
 
@@ -76,32 +78,33 @@ export let UniformBlock = function(name, variablesList) {
         gl.bindBuffer(gl.UNIFORM_BUFFER, null)
 
         this.uboIndex = uboIndex
-        gl.bindBufferBase(gl.UNIFORM_BUFFER, this.uboIndex, this.buffer)
-        gl.uniformBlockBinding(program, this.blockIndex, this.uboIndex)
+        gl.bindBufferBase(gl.UNIFORM_BUFFER, uboIndex, this.buffer)
+        gl.uniformBlockBinding(program, blockIndex, uboIndex)
 
-        let variableIndices = gl.getUniformIndices(program, variablesList)
-        let variableOffsets = gl.getActiveUniforms(
-            program, variableIndices, gl.UNIFORM_OFFSET
+        const variableOffsets = gl.getActiveUniforms(
+            program,
+            gl.getUniformIndices(program, this.variablesList),
+            gl.UNIFORM_OFFSET
         )
 
-        this.variables = {}
-        for( let [i, variable] of variablesList.entries() ) {
-            this.variables[variable] = {
-                index: variableIndices[i],
-                offset: variableOffsets[i],
-            }
+        for( const [i, variable] of this.variablesList.entries() ) {
+            this.variableOffsets.set(variable, variableOffsets[i])
         }
+
     }
 
     this.update = function(gl, program, variable, data) {
         gl.bindBuffer(gl.UNIFORM_BUFFER, this.buffer)
         gl.bufferSubData(
-            gl.UNIFORM_BUFFER, this.variables[variable].offset, data, 0
+            gl.UNIFORM_BUFFER, this.variableOffsets.get(variable), data, 0
         )
         gl.bindBuffer(gl.UNIFORM_BUFFER, null)
         gl.bindBufferBase(gl.UNIFORM_BUFFER, this.uboIndex, this.buffer)
     }
 
+    // this.destroy = function(gl, program) {
+    //     gl.deleteBuffer(this.buffer)
+    // }
 }
 
 
@@ -111,19 +114,20 @@ export let Entity = function(shader, count, attributes, uniforms) {
     this.count = count
     this.attributes = attributes
     this.uniforms = uniforms
-    this.uniformBlocks = {}
+    this.uniformBlocks = []
+    this.frameUniformUpdates = new Map()
     this.vao = null
 
     this.load = function(gl, shaders, buffers) {
-        let program = shaders[this.shader].program
+        const program = shaders.get(this.shader).program
 
         this.vao = gl.createVertexArray()
         gl.bindVertexArray(this.vao)
 
-        for( let attrib of Object.keys(this.attributes) ) {
-            let buffer = buffers[this.attributes[attrib]]
+        for( const attrib of Object.keys(this.attributes) ) {
+            const buffer = buffers.get(this.attributes[attrib])
 
-            let location = gl.getAttribLocation(program, attrib)
+            const location = gl.getAttribLocation(program, attrib)
             gl.enableVertexAttribArray(location)
 
             gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer)
@@ -133,18 +137,37 @@ export let Entity = function(shader, count, attributes, uniforms) {
             gl.bindBuffer(gl.ARRAY_BUFFER, null)
         }
 
-        for( let [blockName, variables] of Object.entries(this.uniforms) ) {
-            this.uniformBlocks[blockName] = new UniformBlock(blockName, variables)
-            this.uniformBlocks[blockName].load(gl, program, 0)
+        for( const [blockName, variables] of Object.entries(this.uniforms) ) {
+            const uniformBlock = new UniformBlock(blockName, variables)
+            uniformBlock.load(gl, program, 0)
+            this.uniformBlocks.push(uniformBlock)
         }
 
         gl.bindVertexArray(null)
     }
 
-    this.updateUniform = function(gl, program, ublockId, unameId, data) {
-        let ublock = Object.values(this.uniformBlocks)[ublockId]
-        let uname = Object.keys(ublock.variables)[unameId]
-        ublock.update(gl, program, uname, data)
+    this.addFrameUniformUpdate = function(ublockId, unameId, data) {
+        const ublock = this.uniformBlocks[ublockId]
+        const uname = ublock.variableOffsets.keys()[unameId]
+        this.frameUniformUpdates.set(ublockId, [uname, data])
     }
+
+    this.updateUniforms = function(gl, program) {
+        for( const [ublockId, [uname, data]] of this.frameUniformUpdates ) {
+            this.uniformBlocks[ublockId].update(gl, program, uname, data)
+        }
+        this.frameUniformUpdates.clear()
+    }
+
+    // this.destroy = function(gl, program) {
+    //     for( let [blockName, variables] of Object.entries(this.uniforms) ) {
+    //         this.uniformBlocks[blockName].destroy(gl, program)
+    //     }
+    //     for( let attrib of Object.keys(this.attributes) ) {
+    //         let location = gl.getAttribLocation(program, attrib)
+    //         gl.disableVertexAttribArray(location)
+    //     }
+    //     gl.deleteVertexArray(this.vao)
+    // }
 
 }

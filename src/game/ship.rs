@@ -47,39 +47,39 @@ impl Ship {
             }"#),
             position: Vec3::zero(),
             rotation: Vec3::zero(),
-            rigidbody: RigidBody::new(100.0, 2.0),
+            rigidbody: RigidBody::new(1000.0, 2.0),
             thrusters: [
                 // THRUSTER_LEFT_TOP,
                 Thruster::new(
-                    Vec3::new(-4.0, 0.0, -4.0), Vec3::new(1.0, 0.0, 0.0), 1.1,
+                    Vec3::new(-4.0, 0.0, -4.0), Vec3::new(1.0, 0.0, 0.0), 20.0,
                 ),
                 // THRUSTER_RIGHT_TOP,
                 Thruster::new(
-                    Vec3::new(4.0, 0.0, -4.0), Vec3::new(-1.0, 0.0, 0.0), 1.1,
+                    Vec3::new(4.0, 0.0, -4.0), Vec3::new(-1.0, 0.0, 0.0), 20.0,
                 ),
                 // THRUSTER_LEFT_BOTTOM,
                 Thruster::new(
-                    Vec3::new(-4.0, 0.0, 4.0), Vec3::new(1.0, 0.0, 0.0), 1.1,
+                    Vec3::new(-4.0, 0.0, 4.0), Vec3::new(1.0, 0.0, 0.0), 20.0,
                 ),
                 // THRUSTER_RIGHT_BOTTOM,
                 Thruster::new(
-                    Vec3::new(4.0, 0.0, 4.0), Vec3::new(-1.0, 0.0, 0.0), 1.1,
+                    Vec3::new(4.0, 0.0, 4.0), Vec3::new(-1.0, 0.0, 0.0), 20.0,
                 ),
                 // THRUSTER_FORWARD1,
                 Thruster::new(
-                    Vec3::new(-2.0, 0.0, 6.0), Vec3::new(0.0, 0.0, -1.0), 1.7,
+                    Vec3::new(-2.0, 0.0, 6.0), Vec3::new(0.0, 0.0, -1.0), 300.0,
                 ),
                 // THRUSTER_FORWARD2,
                 Thruster::new(
-                    Vec3::new(2.0, 0.0, 6.0), Vec3::new(0.0, 0.0, -1.0), 1.7,
+                    Vec3::new(2.0, 0.0, 6.0), Vec3::new(0.0, 0.0, -1.0), 300.0,
                 ),
                 // THRUSTER_BACKWARD1,
                 Thruster::new(
-                    Vec3::new(-1.0, 0.0, -6.0), Vec3::new(0.0, 0.0, 1.0), 1.3,
+                    Vec3::new(-1.0, 0.0, -6.0), Vec3::new(0.0, 0.0, 1.0), 100.0,
                 ),
                 // THRUSTER_BACKWARD2,
                 Thruster::new(
-                    Vec3::new(1.0, 0.0, -6.0), Vec3::new(0.0, 0.0, 1.0), 1.3,
+                    Vec3::new(1.0, 0.0, -6.0), Vec3::new(0.0, 0.0, 1.0), 100.0,
                 ),
             ],
             gun1: Gun::new(

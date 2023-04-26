@@ -12,18 +12,12 @@ const gl = canvas.getContext('webgl2')
 
 
 
+let BUFFER_SIZE
 const textDecoder = new TextDecoder()
 let wasm
-let t = 0
-let keys = 0
-let prevdt, dt
-let BUFFER_SIZE
-
-
-let shaders = {}
-let buffers = {}
-let entities = {}
-
+let shaders = new Map()
+let buffers = new Map()
+let entities = new Map()
 let allIds = new Set()
 
 
@@ -37,7 +31,7 @@ const wasmImports = {
 
         js_console_error_raw: (ptr, len) => {
             const data = new Uint8Array(wasm.memory.buffer, ptr, len)
-            let error = new Error()
+            const error = new Error()
             console.error(
                 textDecoder.decode(data) + '\n\n' + error.stack
             )
@@ -57,8 +51,9 @@ const wasmImports = {
             data = new Uint8Array(wasm.memory.buffer, frag_ptr, frag_len)
             let frag = textDecoder.decode(data)
 
-            shaders[name] = new Shader(vert, frag)
-            shaders[name].compile(gl)
+            const shader = new Shader(vert, frag)
+            shader.compile(gl)
+            shaders.set(name, shader)
         },
 
 
@@ -70,14 +65,16 @@ const wasmImports = {
             let name = textDecoder.decode(data)
 
             data = new Uint8Array(wasm.memory.buffer, data_ptr, data_len)
-            buffers[name] = new Buffer(
+
+            const buffer = new Buffer(
                 new Float32Array(JSON.parse(textDecoder.decode(data))),
                 'STATIC_DRAW',
                 size,
                 'FLOAT',
                 normalize == 0 ? false : true,
             )
-            buffers[name].load(gl)
+            buffer.load(gl)
+            buffers.set(name, buffer)
         },
 
         js_add_buffer_bytes: (
@@ -88,14 +85,15 @@ const wasmImports = {
             let name = textDecoder.decode(data)
 
             data = new Uint8Array(wasm.memory.buffer, data_ptr, data_len)
-            buffers[name] = new Buffer(
+            const buffer = new Buffer(
                 new Uint8Array(JSON.parse(textDecoder.decode(data))),
                 'STATIC_DRAW',
                 size,
                 'UNSIGNED_BYTE',
                 normalize == 0 ? false : true,
             )
-            buffers[name].load(gl)
+            buffer.load(gl)
+            buffers.set(name, buffer)
         },
 
         js_add_entity: (ptr, len) => {
@@ -108,20 +106,29 @@ const wasmImports = {
             }
             allIds.add(id)
 
-            entities[id] = new Entity(
+            const entity = new Entity(
                 meta.shader, meta.count, meta.attributes, meta.uniforms
             )
-
-            entities[id].load(gl, shaders, buffers)
-            shaders[entities[id].shader].entities.push(id)
+            entity.load(gl, shaders, buffers)
+            shaders.get(entity.shader).entities.push(id)
+            entities.set(id, entity)
 
             return id
         },
+
+        // js_destroy_entity: (id) => {
+        //     entities[id].destroy(gl, shaders[entities[id].shader].program)
+        //     const index = shaders[entities[id].shader].entities.indexOf(id)
+        //     shaders[entities[id].shader].entities.splice(index, 1)
+        //     delete entities[id]
+        //     allIds.delete(id)
+        // },
 
     },
 }
 
 
+let keys = 0
 
 async function load() {
 
@@ -174,61 +181,41 @@ load()
 
 
 
+let t = 0
+let prevdt, dt
+let buffer, bufferptr, bufferLen, bid, blen, b
+
 
 function render(currentdt) {
 
     if( prevdt === undefined ) { prevdt = currentdt }
     dt = currentdt - prevdt
     prevdt = currentdt
-    dt = dt / 10
+    dt = Math.floor(dt) % 2 == 0 ? dt : Math.floor(dt) - 1
+    dt = dt / 1000
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-    let bufferptr = wasm.instance.exports.render(wasm.ptr, t, dt, keys)
+    bufferptr = wasm.instance.exports.render(wasm.ptr, t, dt, keys)
+    buffer = new Float32Array(wasm.memory.buffer, bufferptr, BUFFER_SIZE)
 
-    const buffer = new Float32Array(wasm.memory.buffer, bufferptr, BUFFER_SIZE)
-    // console.log(buffer)
-
-    let b = 0
-    let bufferLen = buffer[b++]
-
-    let uniformUpdates = {}
+    b = 0
+    bufferLen = buffer[b++]
     while( b < bufferLen ) {
-        let id = buffer[b++]
-        let len = buffer[b++]
-
-        if( !(id in uniformUpdates) ) {
-            uniformUpdates[id] = []
-        }
-
-        uniformUpdates[id].push({
-            ublock: buffer[b++],
-            uname: buffer[b++],
-            data: buffer.slice(b, b + len)
-        })
-        b += len
+        bid = buffer[b++]
+        blen = buffer[b++]
+        entities.get(bid).addFrameUniformUpdate(
+            buffer[b++], buffer[b++], buffer.slice(b, b + blen)
+        )
+        b += blen
     }
-    // console.log(uniformUpdates)
 
-
-    for( let shader of Object.values(shaders) ) {
+    for( const shader of shaders.values() ) {
         gl.useProgram(shader.program)
-
-        for( let entityID of shader.entities ) {
-            let entity = entities[entityID]
+        for( const entityID of shader.entities ) {
+            let entity = entities.get(entityID)
             gl.bindVertexArray(entity.vao)
-
-            if( entityID in uniformUpdates ) {
-                for( let uniformUpdate of uniformUpdates[entityID] ) {
-                    entity.updateUniform(
-                        gl, shader.program,
-                        uniformUpdate.ublock,
-                        uniformUpdate.uname,
-                        uniformUpdate.data,
-                    )
-                }
-            }
-
+            entity.updateUniforms(gl, shader.program)
             gl.drawArrays(gl.TRIANGLES, 0, entity.count)
             gl.bindVertexArray(null)
         }

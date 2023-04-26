@@ -45,12 +45,12 @@ impl Bullet {
                 "objectData": ["u_matrix"]
             }
         }"#);
-        object.rigidbody.velocity_limit = 4.0;
+        object.rigidbody.velocity_limit = 400.0;
         object
     }
 
     const LIFETIME: f32 = 200.0;
-    const EXIT_VELOCITY: f32 = 2.0;
+    const EXIT_VELOCITY: f32 = 400.0;
 
     pub fn fire(
         &mut self, frame: &Frame, position: Vec3, rotation: Vec3,

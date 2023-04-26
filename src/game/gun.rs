@@ -50,7 +50,7 @@ impl Gun {
     }
 
     const ORIGIN: Vec3 = Vec3::zero();
-    const SHOOT_DELAY: f32 = 10.0;
+    const SHOOT_DELAY: f32 = 4.0;
 
     pub fn shoot(
         &mut self, frame: &Frame, rotation: Vec3, rigidbody: &mut RigidBody
