@@ -4,6 +4,7 @@ mod math;
 mod physics;
 mod utils;
 mod game;
+mod prng;
 
 use crate::engine::{Engine, Camera, Frame};
 use crate::math::{Vec3, PI};
@@ -71,10 +72,18 @@ pub extern fn init() -> *mut Engine {
 
 
 #[no_mangle]
-pub extern fn render(
-    ptr: *mut Engine, t: f32, dt: f32, keys: u8
-) -> *const f32 {
+pub extern fn get_framebuffer_pointer(ptr: *mut Engine) -> *const f32 {
+    let engine = unsafe {
+        assert!(!ptr.is_null());
+        &mut *ptr
+    };
+    engine.frame.buffer.as_ptr()
+}
 
+
+
+#[no_mangle]
+pub extern fn render(ptr: *mut Engine, t: f32, dt: f32, keys: u8) {
     let engine = unsafe {
         assert!(!ptr.is_null());
         &mut *ptr
@@ -86,5 +95,5 @@ pub extern fn render(
 
     engine.game.render_frame(&mut engine.frame, &mut engine.camera);
 
-    engine.frame.buffer.buffer_as_ptr()
+    engine.frame.buffer.update_length()
 }

@@ -21,16 +21,15 @@ impl MemoryBuffer {
         self.add(0.0);
     }
 
-    pub fn buffer_as_ptr(&mut self) -> *const f32 {
+    pub fn update_length(&mut self) {
         self[0.into()] = self.len() as f32;
-        self.as_ptr()
     }
 
     pub fn add_float(&mut self, id: usize, ublock: f32, uvar: f32, value: f32) {
         self.add(id as f32);
-        self.add(1.0);
         self.add(ublock);
         self.add(uvar);
+        self.add(1.0);
         self.add(value);
     }
 
@@ -38,9 +37,9 @@ impl MemoryBuffer {
         &mut self, id: usize, ublock: f32, uvar: f32, matrix: &Matrix4
     ) {
         self.add(id as f32);
-        self.add(16.0);
         self.add(ublock);
         self.add(uvar);
+        self.add(16.0);
         for row in matrix.matrix.iter() {
             for value in row.iter() {
                 self.add(*value);

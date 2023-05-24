@@ -14,10 +14,14 @@ pub use gun::Gun;
 pub mod bullet;
 pub use bullet::Bullet;
 
+pub mod asteroid;
+pub use asteroid::Asteroid;
+
 
 use crate::engine::{Camera, Arena, ArenaID, Frame};
 use crate::engine::entity::{ EntityBehavior };
 use crate::math::{ Matrix4 };
+use crate::prng::{ Xoroshiro128Plus };
 
 
 
@@ -26,6 +30,7 @@ pub struct Game {
     pub rot1: ArenaID,
     pub rot2: ArenaID,
     pub objects: Arena<Object3d, 10>,
+    pub asteroids: Arena<Asteroid, 20>,
 }
 
 
@@ -33,6 +38,8 @@ pub struct Game {
 impl Game {
 
     pub fn new() -> Self {
+
+        let mut prng = Xoroshiro128Plus::new(2, 4);
 
         let ship = Ship::new();
 
@@ -81,22 +88,23 @@ impl Game {
         // }"#;
 
 
-        // let mut asteroid_ids = Arena::empty();
-        // for i in 0..5 {
-        //     let mut asteroid = Node::new(Some(asteroid_meta));
-        //     asteroid.scale.set(5.0, 5.0, 5.0);
-        //     asteroid.position.set(-100.0, 0.0, -100.0);
-        //     asteroid.position.x += 40.0 * i as f32;
-        //     asteroid.rigidbody.enable(100.0, 2.0);
-        //     asteroid.aabb.enable(12.0, 12.0);
+        let mut asteroids = Arena::empty();
+        for _ in 0..15 {
+            let s = prng.random_f32_bw(5.0, 10.0);
+            let x = prng.random_f32_bw(0.0, 400.0) - 200.0;
+            let z = prng.random_f32_bw(0.0, 400.0) - 200.0;
+            let mut asteroid = Asteroid::new();
+            asteroid.scale.set(s, s, s);
+            asteroid.position.set(x, 0.0, z);
 
+            asteroids.add(asteroid);
         //     let mut test = Node::new(Some(testmeta));
         //     test.scale.set(12.0, 12.0, 12.0);
         //     test.position = asteroid.position;
 
         //     asteroid_ids.add(scenegraph.add_object(scene, asteroid));
         //     scenegraph.add_object(scene, test);
-        // }
+        }
 
 
 
@@ -104,6 +112,7 @@ impl Game {
             ship,
             rot1, rot2,
             objects,
+            asteroids
         }
     }
 
@@ -116,10 +125,14 @@ impl Game {
         camera.position.z = self.ship.position.z + 0.1;
         camera.look_at(self.ship.position);
 
-        // for object in game.objects.slice_mut() {
+        // for object in self.objects.slice_mut() {
         //     object.render_frame(frame);
         // }
 
+
+        for asteroid in self.asteroids.slice_mut() {
+            asteroid.render_frame(frame);
+        }
 
         self.objects[self.rot1].rotation.x = -frame.t * 0.5 * crate::PI / 180.0;
         self.objects[self.rot1].rotation.y = -frame.t * 0.5 * crate::PI / 180.0;
@@ -131,6 +144,10 @@ impl Game {
 
         for object in self.objects.slice_mut() {
             object.update_uniforms(frame, Matrix4::identity());
+        }
+
+        for asteroid in self.asteroids.slice_mut() {
+            asteroid.update_uniforms(frame, Matrix4::identity());
         }
     }
 

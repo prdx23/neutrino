@@ -12,7 +12,6 @@ const gl = canvas.getContext('webgl2')
 
 
 
-let BUFFER_SIZE
 const textDecoder = new TextDecoder()
 let wasm
 let shaders = new Map()
@@ -141,14 +140,16 @@ async function load() {
     // let file = 'target/wasm32-unknown-unknown/release/neutrino_demo.wasm'
     wasm = await WebAssembly.instantiateStreaming(fetch(file), wasmImports)
     wasm.memory = wasm.instance.exports.memory
-    console.log(wasm)
-
-    BUFFER_SIZE = new Uint32Array(
-        WebAssembly.Module.customSections(wasm.module, 'BUFFER_SIZE'
-    )[0])[0]
 
     wasm.ptr = wasm.instance.exports.init()
 
+    wasm.framebuffer = new Float32Array(
+        wasm.memory.buffer,
+        wasm.instance.exports.get_framebuffer_pointer(wasm.ptr),
+        new Uint32Array(
+            WebAssembly.Module.customSections(wasm.module, 'BUFFER_SIZE')[0]
+        )[0]
+    )
 
     const keyShifts = {
         KeyW: 0, KeyA: 1, KeyS: 2, KeyD: 3,
@@ -183,7 +184,7 @@ load()
 
 let t = 0
 let prevdt, dt
-let buffer, bufferptr, bufferLen, bid, blen, b
+let bufferLen, b
 
 
 function render(currentdt) {
@@ -196,24 +197,23 @@ function render(currentdt) {
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-    bufferptr = wasm.instance.exports.render(wasm.ptr, t, dt, keys)
-    buffer = new Float32Array(wasm.memory.buffer, bufferptr, BUFFER_SIZE)
+    wasm.instance.exports.render(wasm.ptr, t, dt, keys)
 
-    b = 0
-    bufferLen = buffer[b++]
+    bufferLen = wasm.framebuffer[0]
+    b = 1
     while( b < bufferLen ) {
-        bid = buffer[b++]
-        blen = buffer[b++]
-        entities.get(bid).addFrameUniformUpdate(
-            buffer[b++], buffer[b++], buffer.slice(b, b + blen)
+        entities.get(wasm.framebuffer[b++]).addFrameUniformUpdate(
+            wasm.framebuffer[b++],
+            wasm.framebuffer[b++],
+            wasm.framebuffer.slice(b + 1, b + wasm.framebuffer[b] + 1)
         )
-        b += blen
+        b += wasm.framebuffer[b] + 1
     }
 
     for( const shader of shaders.values() ) {
         gl.useProgram(shader.program)
         for( const entityID of shader.entities ) {
-            let entity = entities.get(entityID)
+            const entity = entities.get(entityID)
             gl.bindVertexArray(entity.vao)
             entity.updateUniforms(gl, shader.program)
             gl.drawArrays(gl.TRIANGLES, 0, entity.count)
