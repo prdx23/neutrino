@@ -1,6 +1,6 @@
 
 use crate::math::{ Vec3, Matrix4 };
-use crate::physics::{ RigidBody };
+use crate::physics;
 use crate::engine::{ Frame };
 use crate::engine::entity::{ EntityBehavior };
 use crate::utils;
@@ -13,7 +13,7 @@ pub struct Bullet {
     rotation: Vec3,
     live: bool,
     fire_timestamp: f32,
-    rigidbody: RigidBody,
+    rigidbody: physics::RigidBody,
 }
 
 
@@ -25,7 +25,9 @@ impl Default for Bullet {
             position: Vec3::zero(),
             rotation: Vec3::zero(),
             fire_timestamp: 0.0,
-            rigidbody: RigidBody::new(1.0, 0.0),
+            rigidbody: physics::RigidBody::new(
+                12.0, physics::moi_cube(12.0, 2.0)
+            ),
         }
     }
 }
@@ -45,16 +47,16 @@ impl Bullet {
                 "objectData": ["u_matrix"]
             }
         }"#);
-        object.rigidbody.velocity_limit = 400.0;
+        object.rigidbody.velocity_limit = 800.0;
         object
     }
 
-    const LIFETIME: f32 = 200.0;
+    const LIFETIME: f32 = 100.0;
     const EXIT_VELOCITY: f32 = 400.0;
 
     pub fn fire(
         &mut self, frame: &Frame, position: Vec3, rotation: Vec3,
-        dir: Vec3, parent_rb: &RigidBody
+        dir: Vec3, parent_rb: &physics::RigidBody
     ) -> Vec3 {
 
         self.position = position;

@@ -32,7 +32,8 @@ impl Thruster {
                     "objectData": ["u_matrix"]
                 }
             }"#),
-            position, direction,
+            position,
+            direction: direction.unit(),
             thrust: thrust * 1000.0,   // in kN
             firing: false,
             matrix: Matrix4::identity(),
@@ -41,13 +42,22 @@ impl Thruster {
 
     const ORIGIN: Vec3 = Vec3::zero();
 
-    pub fn fire(&mut self, rigidbody: &mut RigidBody) {
+    pub fn fire(&mut self, rigidbody: &mut RigidBody, throttle: f32) {
+        rigidbody.apply_force_and_torque(
+            -self.exhaust_dir() * (self.thrust * throttle),
+            self.distance_from_center()
+        );
+        self.firing = true;
+    }
+
+    pub fn exhaust_dir(&self) -> Vec3 {
         let center = self.matrix * Self::ORIGIN;
-        let distance = (self.matrix * self.position) - center;
-        let transformed_force = (self.matrix * self.direction) - center;
-        let force = transformed_force.unit() * self.thrust;
-        rigidbody.apply_force_and_torque(force, distance);
-        self.firing = true
+        ((self.matrix * self.direction) - center).unit()
+    }
+
+    pub fn distance_from_center(&self) -> Vec3 {
+        let center = self.matrix * Self::ORIGIN;
+        (self.matrix * self.position) - center
     }
 
 }
@@ -61,7 +71,7 @@ impl EntityBehavior for Thruster {
         self.matrix = matrix.clone();
         if self.firing {
             matrix.translate(
-                self.position + (self.direction * -1.0 * 4.0)
+                self.position + (self.direction * 1.0 * 4.0)
             );
             self.firing = false;
         }

@@ -15,12 +15,14 @@ pub struct Vec3 {
 
 impl Vec3 {
 
+    const ZERO: Vec3 = Vec3 { x: 0.0, y: 0.0, z: 0.0 };
+
     pub const fn new(x: f32, y: f32, z: f32) -> Vec3 {
         Vec3 { x: x, y: y, z: z }
     }
 
     pub const fn zero() -> Vec3 {
-        Vec3 { x: 0.0, y: 0.0, z: 0.0 }
+        Self::ZERO
     }
 
     pub fn set(&mut self, x: f32, y: f32, z: f32) {
@@ -64,6 +66,7 @@ impl Vec3 {
     }
 
     pub fn unit(&self) -> Self {
+        if *self == Self::ZERO { return Self::ZERO }
         *self / self.len()
     }
 }

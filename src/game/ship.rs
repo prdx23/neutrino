@@ -1,6 +1,6 @@
 
 use crate::math::{ Vec3, Matrix4 };
-use crate::physics::{ RigidBody };
+use crate::physics;
 use crate::engine::entity::{ EntityBehavior };
 use crate::engine::{ Key, Frame };
 use crate::game::{ Thruster, Gun };
@@ -12,7 +12,7 @@ pub struct Ship {
     pub id: usize,
     pub position: Vec3,
     pub rotation: Vec3,
-    rigidbody: RigidBody,
+    rigidbody: physics::RigidBody,
     thrusters: [Thruster; 8],
     gun1: Gun,
     gun2: Gun,
@@ -47,39 +47,41 @@ impl Ship {
             }"#),
             position: Vec3::zero(),
             rotation: Vec3::zero(),
-            rigidbody: RigidBody::new(1000.0, 2.0),
+            rigidbody: physics::RigidBody::new(
+                1000.0, physics::moi_cuboid(1000.0, 4.0, 6.0)
+            ),
             thrusters: [
                 // THRUSTER_LEFT_TOP,
                 Thruster::new(
-                    Vec3::new(-4.0, 0.0, -4.0), Vec3::new(1.0, 0.0, 0.0), 20.0,
+                    Vec3::new(-4.0, 0.0, -4.0), Vec3::new(-1.0, 0.0, 0.0), 100.0,
                 ),
                 // THRUSTER_RIGHT_TOP,
                 Thruster::new(
-                    Vec3::new(4.0, 0.0, -4.0), Vec3::new(-1.0, 0.0, 0.0), 20.0,
+                    Vec3::new(4.0, 0.0, -4.0), Vec3::new(1.0, 0.0, 0.0), 100.0,
                 ),
                 // THRUSTER_LEFT_BOTTOM,
                 Thruster::new(
-                    Vec3::new(-4.0, 0.0, 4.0), Vec3::new(1.0, 0.0, 0.0), 20.0,
+                    Vec3::new(-4.0, 0.0, 4.0), Vec3::new(-1.0, 0.0, 0.0), 100.0,
                 ),
                 // THRUSTER_RIGHT_BOTTOM,
                 Thruster::new(
-                    Vec3::new(4.0, 0.0, 4.0), Vec3::new(-1.0, 0.0, 0.0), 20.0,
+                    Vec3::new(4.0, 0.0, 4.0), Vec3::new(1.0, 0.0, 0.0), 100.0,
                 ),
                 // THRUSTER_FORWARD1,
                 Thruster::new(
-                    Vec3::new(-2.0, 0.0, 6.0), Vec3::new(0.0, 0.0, -1.0), 300.0,
+                    Vec3::new(-2.0, 0.0, 6.0), Vec3::new(0.0, 0.0, 1.0), 300.0,
                 ),
                 // THRUSTER_FORWARD2,
                 Thruster::new(
-                    Vec3::new(2.0, 0.0, 6.0), Vec3::new(0.0, 0.0, -1.0), 300.0,
+                    Vec3::new(2.0, 0.0, 6.0), Vec3::new(0.0, 0.0, 1.0), 300.0,
                 ),
                 // THRUSTER_BACKWARD1,
                 Thruster::new(
-                    Vec3::new(-1.0, 0.0, -6.0), Vec3::new(0.0, 0.0, 1.0), 100.0,
+                    Vec3::new(-1.0, 0.0, -6.0), Vec3::new(0.0, 0.0, -1.0), 100.0,
                 ),
                 // THRUSTER_BACKWARD2,
                 Thruster::new(
-                    Vec3::new(1.0, 0.0, -6.0), Vec3::new(0.0, 0.0, 1.0), 100.0,
+                    Vec3::new(1.0, 0.0, -6.0), Vec3::new(0.0, 0.0, -1.0), 100.0,
                 ),
             ],
             gun1: Gun::new(
@@ -97,43 +99,46 @@ impl Ship {
 impl EntityBehavior for Ship {
 
     fn render_frame(&mut self, frame: &mut Frame) {
+        let rigidbody = &mut self.rigidbody;
 
         if frame.pressed(Key::W) {
-            self.thrusters[Self::THRUSTER_FORWARD1].fire(&mut self.rigidbody);
-            self.thrusters[Self::THRUSTER_FORWARD2].fire(&mut self.rigidbody);
+            self.thrusters[Self::THRUSTER_FORWARD1].fire(rigidbody, 1.0);
+            self.thrusters[Self::THRUSTER_FORWARD2].fire(rigidbody, 1.0);
         }
         if frame.pressed(Key::S) {
-            self.thrusters[Self::THRUSTER_BACKWARD1].fire(&mut self.rigidbody);
-            self.thrusters[Self::THRUSTER_BACKWARD2].fire(&mut self.rigidbody);
+            self.thrusters[Self::THRUSTER_BACKWARD1].fire(rigidbody, 1.0);
+            self.thrusters[Self::THRUSTER_BACKWARD2].fire(rigidbody, 1.0);
         }
 
         if frame.pressed(Key::A) {
-            self.thrusters[Self::THRUSTER_LEFT_BOTTOM].fire(&mut self.rigidbody);
-            self.thrusters[Self::THRUSTER_RIGHT_TOP].fire(&mut self.rigidbody);
+            self.thrusters[Self::THRUSTER_LEFT_BOTTOM].fire(rigidbody, 0.15);
+            self.thrusters[Self::THRUSTER_RIGHT_TOP].fire(rigidbody, 0.15);
         }
         if frame.pressed(Key::D) {
-            self.thrusters[Self::THRUSTER_LEFT_TOP].fire(&mut self.rigidbody);
-            self.thrusters[Self::THRUSTER_RIGHT_BOTTOM].fire(&mut self.rigidbody);
+            self.thrusters[Self::THRUSTER_LEFT_TOP].fire(rigidbody, 0.15);
+            self.thrusters[Self::THRUSTER_RIGHT_BOTTOM].fire(rigidbody, 0.15);
         }
 
         if frame.pressed(Key::Q) {
-            self.thrusters[Self::THRUSTER_LEFT_TOP].fire(&mut self.rigidbody);
-            self.thrusters[Self::THRUSTER_LEFT_BOTTOM].fire(&mut self.rigidbody);
+            self.thrusters[Self::THRUSTER_LEFT_TOP].fire(rigidbody, 1.0);
+            self.thrusters[Self::THRUSTER_LEFT_BOTTOM].fire(rigidbody, 1.0);
         }
         if frame.pressed(Key::E) {
-            self.thrusters[Self::THRUSTER_RIGHT_TOP].fire(&mut self.rigidbody);
-            self.thrusters[Self::THRUSTER_RIGHT_BOTTOM].fire(&mut self.rigidbody);
+            self.thrusters[Self::THRUSTER_RIGHT_TOP].fire(rigidbody, 1.0);
+            self.thrusters[Self::THRUSTER_RIGHT_BOTTOM].fire(rigidbody, 1.0);
         }
 
         if frame.pressed(Key::Space) {
-            if frame.t % 2.0 == 0.0 {
-                self.gun1.shoot(frame, self.rotation, &mut self.rigidbody);
-            } else {
-                self.gun2.shoot(frame, self.rotation, &mut self.rigidbody);
-            }
+            // if frame.t % 10.0 == 0.0 {
+                self.gun1.shoot(frame, self.rotation, rigidbody);
+            // } else {
+                self.gun2.shoot(frame, self.rotation, rigidbody);
+            // }
         }
 
-        self.rigidbody.update_physics(
+        rigidbody.apply_damping(150.0);
+
+        rigidbody.update_physics(
             frame.dt, &mut self.position, &mut self.rotation
         );
 

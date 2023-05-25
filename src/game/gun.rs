@@ -8,7 +8,7 @@ use crate::game::{ Bullet };
 use crate::utils;
 
 
-const NBULLETS: usize = 100;
+const NBULLETS: usize = 200;
 
 
 pub struct Gun {

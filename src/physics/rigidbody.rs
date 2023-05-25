@@ -15,8 +15,6 @@ use crate::math::Vec3;
 
 pub struct RigidBody {
     pub mass: f32,
-    pub damping_factor: f32,
-    // pub coff_of_friction: f32,
     pub moment_of_inertia: f32,
 
     force: Vec3,
@@ -33,12 +31,10 @@ pub struct RigidBody {
 
 impl RigidBody {
 
-    pub fn new(mass: f32, damping: f32) -> Self {
+    pub fn new(mass: f32, moi: f32) -> Self {
         Self {
             mass: mass,
-            damping_factor: damping,
-            // coff_of_friction: cof,
-            moment_of_inertia: 10.0 * 10.0 * mass / 6.0,
+            moment_of_inertia: moi,
             force: Vec3::zero(),
             velocity: Vec3::zero(),
             acceleration: Vec3::zero(),
@@ -79,6 +75,23 @@ impl RigidBody {
         self.apply_torque(force, distance);
     }
 
+    pub fn apply_damping(&mut self, cof: f32) {
+
+        if self.velocity.len() > 0.5 {
+            let friction = -self.velocity.unit() * self.mass * cof;
+            self.apply_force(friction);
+        } else {
+            self.velocity.set(0.0, 0.0, 0.0);
+        }
+
+        if self.angular_velocity.len() > 0.01 {
+            self.torque += -self.angular_velocity.unit()
+                * self.moment_of_inertia * cof * 0.08;
+        // } else {
+        //     self.angular_velocity.set(0.0, 0.0, 0.0);
+        }
+    }
+
     pub fn update_physics(
         &mut self, dt: f32, position: &mut Vec3, rotation: &mut Vec3
     ) {
@@ -92,21 +105,6 @@ impl RigidBody {
         if self.angular_velocity.is_near_zero() {
             self.angular_velocity.set(0.0, 0.0, 0.0);
         }
-
-
-        // if self.velocity.is_near_zero() {
-        //     self.velocity.set(0.0, 0.0, 0.0);
-        // } else {
-        //     self.apply_force(self.velocity * self.damping_factor * -1.0);
-        // }
-
-        // if self.angular_velocity.is_near_zero() {
-        //     self.angular_velocity.set(0.0, 0.0, 0.0);
-        // } else {
-        //     self.torque += self.angular_velocity * self.moment_of_inertia * -10.0;
-        //     // self.torque += self.angular_velocity * self.moment_of_inertia * -0.1;
-        //     // self.torque += self.angular_velocity * 2000.5 * -1.0;
-        // }
 
 
         *position += {
