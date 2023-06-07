@@ -143,15 +143,17 @@ export let Entity = function(shader, count, attributes, uniforms) {
     }
 
     this.addFrameUniformUpdate = function(ublockId, unameId, data) {
-        this.frameUniformUpdates.set(ublockId, [unameId, data])
+        this.frameUniformUpdates.set((ublockId * 1000) + unameId, data)
     }
 
     this.updateUniforms = function(gl, program) {
-        for( const [ublockId, [unameId, data]] of this.frameUniformUpdates ) {
-            if( unameId !== -1 ) {
+        for( const [id, data] of this.frameUniformUpdates ) {
+            const ublockId = Math.floor(id / 1000)
+            const unameId = Math.floor(id % 1000)
+            if( data !== -1 ) {
                 this.uniformBlocks.get(ublockId).update(gl, program, unameId, data)
             }
-            this.frameUniformUpdates.set(ublockId, [-1, -1])
+            this.frameUniformUpdates.set(id, -1)
         }
     }
 

@@ -1,6 +1,6 @@
 
 use crate::math::{ Vec3, Matrix4 };
-// use crate::physics::{ RigidBody };
+use crate::physics;
 use crate::engine::{ Frame };
 use crate::engine::entity::{ EntityBehavior };
 use crate::utils;
@@ -13,6 +13,10 @@ pub struct Asteroid {
     pub rotation: Vec3,
     pub scale: Vec3,
     // rigidbody: RigidBody,
+    // pub aabb: physics::Aabb,
+
+    pub collider: physics::collisions::PolygonCollider<4>,
+    pub colliding: bool,
 }
 
 
@@ -24,6 +28,14 @@ impl Default for Asteroid {
             rotation: Vec3::zero(),
             scale: Vec3::new(1.0, 1.0, 1.0),
             // rigidbody: RigidBody::new(1.0, 0.0),
+            // aabb: physics::Aabb::new(0.0, 0.0),
+            collider: physics::collisions::PolygonCollider::new([
+                Vec3::zero(),
+                Vec3::zero(),
+                Vec3::zero(),
+                Vec3::zero(),
+            ]),
+            colliding: false,
         }
     }
 }
@@ -31,7 +43,7 @@ impl Default for Asteroid {
 
 impl Asteroid {
 
-    pub fn new() -> Self {
+    pub fn new(s: f32) -> Self {
         let mut object = Self::default();
         object.id = utils::webgl_add_entity(r#"{
             "shader": "vertex_color",
@@ -41,9 +53,17 @@ impl Asteroid {
                 "a_color": "cube_vertex_colors"
             },
             "uniforms": {
-                "objectData": ["u_matrix"]
+                "objectData": ["u_matrix", "u_collide"]
             }
         }"#);
+        // object.aabb = physics::Aabb::new(s * 2.0, s * 2.0);
+
+        object.collider = physics::collisions::PolygonCollider::new([
+            Vec3::new(-s, 0.0, -s),
+            Vec3::new(s, 0.0, -s),
+            Vec3::new(s, 0.0, s),
+            Vec3::new(-s, 0.0, s),
+        ]);
         object
     }
 
@@ -53,6 +73,7 @@ impl Asteroid {
 impl EntityBehavior for Asteroid {
 
     fn render_frame(&mut self, frame: &mut Frame) {
+        // self.aabb.update(self.position);
         // self.rigidbody.update_physics(
         //     frame.dt, &mut self.position, &mut self.rotation
         // );
@@ -61,8 +82,23 @@ impl EntityBehavior for Asteroid {
     fn update_uniforms(&mut self, frame: &mut Frame, mut matrix: Matrix4) {
         matrix.translate(self.position);
         matrix.rotate(self.rotation);
+        self.collider.update(&matrix);
+
         matrix.scale(self.scale);
         frame.add_view_matrix(self.id, matrix);
+
+
+        if self.colliding {
+            frame.buffer.add_float(self.id, 0.0, 1.0, 1.0);
+            self.colliding = false;
+        } else {
+            frame.buffer.add_float(self.id, 0.0, 1.0, 0.0);
+        }
+        // if self.aabb.colliding {
+        //     frame.buffer.add_float(self.id, 0.0, 1.0, 1.0);
+        // } else {
+        //     frame.buffer.add_float(self.id, 0.0, 1.0, 0.0);
+        // }
     }
 
 }

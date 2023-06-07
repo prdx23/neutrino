@@ -21,6 +21,7 @@ pub use asteroid::Asteroid;
 use crate::engine::{Camera, Arena, ArenaID, Frame};
 use crate::engine::entity::{ EntityBehavior };
 use crate::math::{ Matrix4 };
+use crate::physics::collisions::Collider;
 use crate::prng::{ Xoroshiro128Plus };
 
 
@@ -91,9 +92,9 @@ impl Game {
         let mut asteroids = Arena::empty();
         for _ in 0..15 {
             let s = prng.random_f32_bw(5.0, 10.0);
-            let x = prng.random_f32_bw(0.0, 400.0) - 200.0;
-            let z = prng.random_f32_bw(0.0, 400.0) - 200.0;
-            let mut asteroid = Asteroid::new();
+            let x = prng.random_f32_bw(0.0, 200.0) - 100.0;
+            let z = prng.random_f32_bw(0.0, 200.0) - 100.0;
+            let mut asteroid = Asteroid::new(s);
             asteroid.scale.set(s, s, s);
             asteroid.position.set(x, 0.0, z);
 
@@ -118,6 +119,58 @@ impl Game {
 
 
     pub fn render_frame(&mut self, frame: &mut Frame, camera: &mut Camera) {
+
+        for asteroid in self.asteroids.slice_mut() {
+
+            if asteroid.collider.collide(&self.ship.collider) {
+                asteroid.colliding = true;
+                self.ship.colliding = true;
+            }
+            for bullet in self.ship.gun1.bullets.slice_mut() {
+                if bullet.live {
+                    if asteroid.collider.collide(&bullet.collider) {
+                        bullet.live = false;
+                        asteroid.colliding = true;
+                    }
+                }
+            }
+
+            for bullet in self.ship.gun2.bullets.slice_mut() {
+                if bullet.live {
+                    if asteroid.collider.collide(&bullet.collider) {
+                        bullet.live = false;
+                        asteroid.colliding = true;
+                    }
+                }
+            }
+        }
+
+        // for asteroid in self.asteroids.slice_mut() {
+        //     asteroid.aabb.collide(&mut self.ship.aabb);
+        //     for bullet in self.ship.gun1.bullets.slice_mut() {
+        //         if bullet.live {
+        //             if asteroid.aabb.collide(&mut bullet.aabb) {
+        //                 bullet.live = false;
+        //             }
+        //         }
+        //     }
+
+        //     for bullet in self.ship.gun2.bullets.slice_mut() {
+        //         if bullet.live {
+        //             if asteroid.aabb.collide(&mut bullet.aabb) {
+        //                 bullet.live = false;
+        //             }
+        //         }
+        //     }
+        //     // if asteroid.aabb.collide(&mut self.ship.aabb) {
+
+        //     //     // crate::utils::console_log(
+        //     //     //     format!("ship collide").as_str()
+        //     //     // );
+
+        //     // }
+        // }
+
 
         self.ship.render_frame(frame);
 

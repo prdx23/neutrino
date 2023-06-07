@@ -42,7 +42,7 @@ impl RigidBody {
             angular_velocity: Vec3::zero(),
             angular_acceleration: Vec3::zero(),
             velocity_limit: 200.0,
-            angular_velocity_limit: 5.0,
+            angular_velocity_limit: 7.0,
         }
     }
 
@@ -84,12 +84,13 @@ impl RigidBody {
             self.velocity.set(0.0, 0.0, 0.0);
         }
 
-        if self.angular_velocity.len() > 0.01 {
+        if self.angular_velocity.len() > 0.05 {
             self.torque += -self.angular_velocity.unit()
-                * self.moment_of_inertia * cof * 0.08;
-        // } else {
-        //     self.angular_velocity.set(0.0, 0.0, 0.0);
+                * self.moment_of_inertia * cof * 0.10;
+        } else {
+            self.angular_velocity.set(0.0, 0.0, 0.0);
         }
+
     }
 
     pub fn update_physics(

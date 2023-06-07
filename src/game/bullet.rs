@@ -11,9 +11,11 @@ pub struct Bullet {
     pub id: usize,
     position: Vec3,
     rotation: Vec3,
-    live: bool,
+    pub live: bool,
     fire_timestamp: f32,
     rigidbody: physics::RigidBody,
+    pub collider: physics::collisions::CircleCollider,
+    // pub aabb: physics::Aabb,
 }
 
 
@@ -28,6 +30,8 @@ impl Default for Bullet {
             rigidbody: physics::RigidBody::new(
                 12.0, physics::moi_cube(12.0, 2.0)
             ),
+            collider: physics::collisions::CircleCollider::new(1.0),
+            // aabb: physics::Aabb::new(2.0, 2.0),
         }
     }
 }
@@ -83,7 +87,9 @@ impl EntityBehavior for Bullet {
             self.rigidbody.update_physics(
                 frame.dt, &mut self.position, &mut self.rotation
             );
-       }
+        }
+        self.collider.update(self.position);
+        // self.aabb.update(self.position);
     }
 
     fn update_uniforms(&mut self, frame: &mut Frame, mut matrix: Matrix4) {

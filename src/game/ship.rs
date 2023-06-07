@@ -4,6 +4,7 @@ use crate::physics;
 use crate::engine::entity::{ EntityBehavior };
 use crate::engine::{ Key, Frame };
 use crate::game::{ Thruster, Gun };
+// use crate::physics::collisions::{CollisionBehavior, CollisionType};
 use crate::utils;
 
 
@@ -14,8 +15,10 @@ pub struct Ship {
     pub rotation: Vec3,
     rigidbody: physics::RigidBody,
     thrusters: [Thruster; 8],
-    gun1: Gun,
-    gun2: Gun,
+    pub gun1: Gun,
+    pub gun2: Gun,
+    pub collider: physics::collisions::PolygonCollider<4>,
+    pub colliding: bool,
 }
 
 
@@ -42,14 +45,21 @@ impl Ship {
                     "a_color": "cube_vertex_colors"
                 },
                 "uniforms": {
-                    "objectData": ["u_matrix"]
+                    "objectData": ["u_matrix", "u_collide"]
                 }
             }"#),
             position: Vec3::zero(),
             rotation: Vec3::zero(),
             rigidbody: physics::RigidBody::new(
-                1000.0, physics::moi_cuboid(1000.0, 4.0, 6.0)
+                1000.0, physics::moi_cuboid(1000.0, 4.0 * 2.0, 6.0 * 2.0)
             ),
+            collider: physics::collisions::PolygonCollider::new([
+                Vec3::new(-4.0, 0.0, -6.0),
+                Vec3::new(4.0, 0.0, -6.0),
+                Vec3::new(4.0, 0.0, 6.0),
+                Vec3::new(-4.0, 0.0, 6.0),
+            ]),
+            colliding: false,
             thrusters: [
                 // THRUSTER_LEFT_TOP,
                 Thruster::new(
@@ -111,12 +121,12 @@ impl EntityBehavior for Ship {
         }
 
         if frame.pressed(Key::A) {
-            self.thrusters[Self::THRUSTER_LEFT_BOTTOM].fire(rigidbody, 0.15);
-            self.thrusters[Self::THRUSTER_RIGHT_TOP].fire(rigidbody, 0.15);
+            self.thrusters[Self::THRUSTER_LEFT_BOTTOM].fire(rigidbody, 0.7);
+            self.thrusters[Self::THRUSTER_RIGHT_TOP].fire(rigidbody, 0.7);
         }
         if frame.pressed(Key::D) {
-            self.thrusters[Self::THRUSTER_LEFT_TOP].fire(rigidbody, 0.15);
-            self.thrusters[Self::THRUSTER_RIGHT_BOTTOM].fire(rigidbody, 0.15);
+            self.thrusters[Self::THRUSTER_LEFT_TOP].fire(rigidbody, 0.7);
+            self.thrusters[Self::THRUSTER_RIGHT_BOTTOM].fire(rigidbody, 0.7);
         }
 
         if frame.pressed(Key::Q) {
@@ -136,12 +146,29 @@ impl EntityBehavior for Ship {
             // }
         }
 
-        rigidbody.apply_damping(150.0);
-
+        rigidbody.apply_damping(250.0);
         rigidbody.update_physics(
             frame.dt, &mut self.position, &mut self.rotation
         );
+        // self.rotation.y = -3.14 / 4.0;
 
+        // self.aabb.update(self.position);
+
+        // for v in self.collider.vertices.iter() {
+        //     crate::utils::console_log(
+        //         format!("{:?}", v).as_str()
+        //     );
+        // }
+
+        // for v in self.collider.world_axes.iter() {
+        //     crate::utils::console_log(
+        //         format!("axis {:?}", v).as_str()
+        //     );
+        // }
+
+        //     crate::utils::console_log(
+        //         format!("---").as_str()
+        //     );
         self.gun1.render_frame(frame);
         self.gun2.render_frame(frame);
 
@@ -156,6 +183,18 @@ impl EntityBehavior for Ship {
         matrix.rotate(self.rotation);
         frame.add_view_matrix(self.id, matrix);
 
+        self.collider.update(&matrix);
+
+        // crate::utils::console_log(
+        //     format!("ship collide {:?}", self.aabb.colliding).as_str()
+        // );
+        if self.colliding {
+            frame.buffer.add_float(self.id, 0.0, 1.0, 1.0);
+            self.colliding = false;
+        } else {
+            frame.buffer.add_float(self.id, 0.0, 1.0, 0.0);
+        }
+
         self.gun1.update_uniforms(frame, matrix);
         self.gun2.update_uniforms(frame, matrix);
 
@@ -165,3 +204,15 @@ impl EntityBehavior for Ship {
     }
 
 }
+
+
+// impl CollisionBehavior for Ship {
+
+//     fn aabb(&self) -> &physics::Aabb {
+//         &self.aabb
+//     }
+
+//     fn collide(&self, ctype: CollisionType, other: &dyn CollisionBehavior) {
+
+//     }
+// }
