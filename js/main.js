@@ -136,8 +136,9 @@ async function load() {
         return
     }
 
-    let file = 'target/wasm32-unknown-unknown/debug/neutrino_demo.wasm'
+    // let file = 'target/wasm32-unknown-unknown/debug/neutrino_demo.wasm'
     // let file = 'target/wasm32-unknown-unknown/release/neutrino_demo.wasm'
+    let file = 'js/neutrino_demo.wasm'
     wasm = await WebAssembly.instantiateStreaming(fetch(file), wasmImports)
     wasm.memory = wasm.instance.exports.memory
 

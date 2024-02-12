@@ -8,7 +8,7 @@ use crate::game::{ Bullet };
 use crate::utils;
 
 
-const NBULLETS: usize = 200;
+const NBULLETS: usize = 100;
 
 
 pub struct Gun {
@@ -17,7 +17,7 @@ pub struct Gun {
     direction: Vec3,
     last_timestamp: f32,
     matrix: Matrix4,
-    bullets: Arena<Bullet, NBULLETS>,
+    pub bullets: Arena<Bullet, NBULLETS>,
     bullet_index: usize,
 }
 

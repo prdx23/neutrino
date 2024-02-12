@@ -12,7 +12,7 @@ pub struct Asteroid {
     pub position: Vec3,
     pub rotation: Vec3,
     pub scale: Vec3,
-    // rigidbody: RigidBody,
+    // pub rigidbody: physics::RigidBody,
     // pub aabb: physics::Aabb,
 
     pub collider: physics::collisions::PolygonCollider<4>,
@@ -27,7 +27,7 @@ impl Default for Asteroid {
             position: Vec3::zero(),
             rotation: Vec3::zero(),
             scale: Vec3::new(1.0, 1.0, 1.0),
-            // rigidbody: RigidBody::new(1.0, 0.0),
+            // rigidbody: physics::RigidBody::new(1.0, 0.0),
             // aabb: physics::Aabb::new(0.0, 0.0),
             collider: physics::collisions::PolygonCollider::new([
                 Vec3::zero(),
@@ -58,6 +58,10 @@ impl Asteroid {
         }"#);
         // object.aabb = physics::Aabb::new(s * 2.0, s * 2.0);
 
+        // object.rigidbody = physics::RigidBody::new(
+        //     250.0 * s, physics::moi_cuboid(250.0 * s, s * 2.0, s * 2.0)
+        // );
+
         object.collider = physics::collisions::PolygonCollider::new([
             Vec3::new(-s, 0.0, -s),
             Vec3::new(s, 0.0, -s),
@@ -74,6 +78,8 @@ impl EntityBehavior for Asteroid {
 
     fn render_frame(&mut self, frame: &mut Frame) {
         // self.aabb.update(self.position);
+
+        // self.rigidbody.apply_damping(20.0);
         // self.rigidbody.update_physics(
         //     frame.dt, &mut self.position, &mut self.rotation
         // );

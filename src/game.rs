@@ -108,7 +108,6 @@ impl Game {
         }
 
 
-
         Self {
             ship,
             rot1, rot2,
@@ -122,13 +121,17 @@ impl Game {
 
         for asteroid in self.asteroids.slice_mut() {
 
-            if asteroid.collider.collide(&self.ship.collider) {
+            if let Some((sep_axis, min_depth)) = asteroid.collider.collide(&self.ship.collider) {
                 asteroid.colliding = true;
                 self.ship.colliding = true;
+
+                self.ship.position += sep_axis * (min_depth / 2.0);
+                asteroid.position += -sep_axis * (min_depth / 2.0);
             }
+
             for bullet in self.ship.gun1.bullets.slice_mut() {
                 if bullet.live {
-                    if asteroid.collider.collide(&bullet.collider) {
+                    if let Some((sep_axis, min_depth)) = asteroid.collider.collide(&bullet.collider) {
                         bullet.live = false;
                         asteroid.colliding = true;
                     }
@@ -137,12 +140,13 @@ impl Game {
 
             for bullet in self.ship.gun2.bullets.slice_mut() {
                 if bullet.live {
-                    if asteroid.collider.collide(&bullet.collider) {
+                    if let Some((sep_axis, min_depth)) = asteroid.collider.collide(&bullet.collider) {
                         bullet.live = false;
                         asteroid.colliding = true;
                     }
                 }
             }
+
         }
 
         // for asteroid in self.asteroids.slice_mut() {

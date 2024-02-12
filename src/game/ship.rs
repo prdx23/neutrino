@@ -1,10 +1,10 @@
 
 use crate::math::{ Vec3, Matrix4 };
 use crate::physics;
+use crate::physics::collisions;
 use crate::engine::entity::{ EntityBehavior };
 use crate::engine::{ Key, Frame };
 use crate::game::{ Thruster, Gun };
-// use crate::physics::collisions::{CollisionBehavior, CollisionType};
 use crate::utils;
 
 
@@ -17,7 +17,7 @@ pub struct Ship {
     thrusters: [Thruster; 8],
     pub gun1: Gun,
     pub gun2: Gun,
-    pub collider: physics::collisions::PolygonCollider<4>,
+    pub collider: collisions::PolygonCollider<4>,
     pub colliding: bool,
 }
 
@@ -53,7 +53,7 @@ impl Ship {
             rigidbody: physics::RigidBody::new(
                 1000.0, physics::moi_cuboid(1000.0, 4.0 * 2.0, 6.0 * 2.0)
             ),
-            collider: physics::collisions::PolygonCollider::new([
+            collider: collisions::PolygonCollider::new([
                 Vec3::new(-4.0, 0.0, -6.0),
                 Vec3::new(4.0, 0.0, -6.0),
                 Vec3::new(4.0, 0.0, 6.0),
@@ -206,13 +206,20 @@ impl EntityBehavior for Ship {
 }
 
 
-// impl CollisionBehavior for Ship {
+// impl collisions::CollisionBehavior for Ship {
 
-//     fn aabb(&self) -> &physics::Aabb {
-//         &self.aabb
+//     fn object_type(&self) -> collisions::CollisionType {
+//         collisions::CollisionType::Ship
 //     }
 
-//     fn collide(&self, ctype: CollisionType, other: &dyn CollisionBehavior) {
+//     fn collider(&self) -> &dyn collisions::Collider {
+//         &self.collider
+//     }
 
+//     fn collide(&mut self, other: &mut dyn collisions::CollisionBehavior) {
+//         if self.collider.collide(other.collider()) {
+//             self.handle_collision(other.object_type());
+//             other.handle_collision(other.object_type());
+//         }
 //     }
 // }

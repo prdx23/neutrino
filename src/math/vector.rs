@@ -12,6 +12,11 @@ pub struct Vec3 {
     pub z: f32,
 }
 
+impl Default for Vec3 {
+    fn default() -> Self {
+        Vec3::ZERO
+    }
+}
 
 impl Vec3 {
 
